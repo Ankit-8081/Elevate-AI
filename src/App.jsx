@@ -4,6 +4,8 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ResumeAnalyzer from "./pages/ResumeAnalyzer";
 import JobMatchesPage from "./pages/Jobs";
+import Interview from "./pages/Interview";
+
 
 
 const ProtectedRoute = ({ children }) => {
@@ -53,7 +55,7 @@ function App() {
         path="/Interview"
         element={
           <ProtectedRoute>
-            <Interview-Simulator/>
+            <Interview/>
           </ProtectedRoute>
         }
       />

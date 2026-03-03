@@ -21,7 +21,7 @@ const Sidebar = () => {
     { name: "Resume Analyzer", icon: FileText, path: "/ResumeAnalyzer" },
     { name: "Job Matches", icon: Briefcase, path: "/Jobs" },
     { name: "Skill Roadmap", icon: Map, path: "/roadmap" },
-    { name: "Interview-Simulator", icon: Mic2, path: "/Interview" },
+    { name: "Interview", icon: Mic2, path: "/Interview" },
     { name: "Analytics", icon: BarChart3, path: "/analytics" },
     { name: "Settings", icon: Settings, path: "/settings" },
   ];
