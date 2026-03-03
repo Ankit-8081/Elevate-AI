@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from "../components/sidebar";
+import Header from "../components/header";
 import { 
   Search, 
   Bell, 
@@ -76,7 +77,6 @@ const JobMatchesPage = () => {
 
   return (
     <div className="min-h-screen bg-[#050505] text-slate-200 font-sans selection:bg-cyan-500/30">
-      {/* Background Glows */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 blur-[120px] rounded-full" />
@@ -86,34 +86,9 @@ const JobMatchesPage = () => {
       <Sidebar />
        
 
-        <main className="flex-1 p-4 lg:p-8">
-          {/* Top Header */}
-          <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
-            <div className="relative group w-full max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
-              <input 
-                type="text" 
-                placeholder="Search jobs, companies..." 
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all backdrop-blur-md"
-              />
-            </div>
-            
-            <div className="flex items-center gap-4 self-end md:self-auto">
-              <button className="relative p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-cyan-500 rounded-full border-2 border-[#050505]" />
-              </button>
-              <div className="flex items-center gap-3 pl-4 border-l border-white/10">
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-medium">Alex Rivera</p>
-                  <p className="text-xs text-slate-500">Pro Developer</p>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-violet-500 p-[2px]">
-                  <div className="w-full h-full rounded-full bg-black flex items-center justify-center text-xs font-bold">AR</div>
-                </div>
-              </div>
-            </div>
-          </header>
+       <main className="flex-1 overflow-y-auto">
+          <Header />
+          <div className="p-4 lg:p-8">
 
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
             <div className="xl:col-span-8">
@@ -126,7 +101,6 @@ const JobMatchesPage = () => {
                 <p className="text-slate-400">AI-curated opportunities based on your profile and history.</p>
               </section>
 
-              {/* Filters Bar */}
               <div className="flex flex-wrap items-center gap-3 mb-8">
                 {['Role', 'Location', 'Experience'].map((filter) => (
                   <button key={filter} className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 flex items-center gap-2 text-sm transition-all">
@@ -139,7 +113,6 @@ const JobMatchesPage = () => {
                 </button>
               </div>
 
-              {/* Job Grid */}
               <motion.div 
                 variants={containerVariants}
                 initial="hidden"
@@ -207,7 +180,6 @@ const JobMatchesPage = () => {
               </motion.div>
             </div>
 
-            {/* Match Insights Panel */}
             <aside className="xl:col-span-4 space-y-6">
               <div className="p-6 rounded-2xl bg-gradient-to-b from-white/10 to-transparent border border-white/10 backdrop-blur-xl">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -257,10 +229,10 @@ const JobMatchesPage = () => {
               </div>
             </aside>
           </div>
+          </div>
         </main>
       </div>
 
-      {/* Detail Modal */}
       <AnimatePresence>
         {selectedJob && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

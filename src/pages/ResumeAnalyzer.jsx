@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Header from "../components/header";
 import {
   UploadCloud,
   CheckCircle2,
@@ -79,13 +80,13 @@ export default function ResumeAnalyzer() {
     <div className="flex min-h-screen bg-[#050b14] text-slate-200 font-sans">
       <Sidebar />
 
-      <div className="flex-1 overflow-y-auto relative p-4 md:p-8">
-        {/* Background Glows */}
+      <div className="flex-1 overflow-y-auto relative">
+        <Header />
+          <div className="p-4 md:p-8">
         <div className="fixed top-0 left-1/4 w-96 h-96 bg-cyan-600/10 blur-[120px] -z-10" />
         <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-violet-600/10 blur-[120px] -z-10" />
 
         <main className="max-w-5xl mx-auto space-y-8">
-          {/* 1. Header */}
           <header className="text-center space-y-4">
 
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent">
@@ -93,7 +94,6 @@ export default function ResumeAnalyzer() {
             </h1>
           </header>
 
-          {/* 2. Top Section: Upload Tab */}
           <section>
             <GlassCard className="border-cyan-500/20">
               {!isAnalyzing && !showResults ? (
@@ -146,7 +146,6 @@ export default function ResumeAnalyzer() {
             </GlassCard>
           </section>
 
-          {/* 3. Bottom Section: Results Area */}
           <section className="min-h-[400px]">
             <AnimatePresence mode="wait">
               {!showResults ? (
@@ -167,7 +166,6 @@ export default function ResumeAnalyzer() {
                   animate={{ opacity: 1 }}
                   className="grid grid-cols-1 md:grid-cols-3 gap-6"
                 >
-                  {/* Score Card */}
                   <GlassCard className="md:col-span-1 flex flex-col items-center justify-center text-center">
                     <h3 className="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-6">ATS Score</h3>
                     <div className="relative flex items-center justify-center mb-4">
@@ -189,7 +187,6 @@ export default function ResumeAnalyzer() {
                     <Badge variant="success">Strong Potential</Badge>
                   </GlassCard>
 
-                  {/* Analysis Breakdown */}
                   <div className="md:col-span-2 space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <GlassCard className="p-5 border-emerald-500/20">
@@ -244,6 +241,7 @@ export default function ResumeAnalyzer() {
             </AnimatePresence>
           </section>
         </main>
+        </div>
       </div>
     </div>
   );
