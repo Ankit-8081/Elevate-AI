@@ -2,17 +2,15 @@ import os
 import json
 import asyncio
 from typing import Annotated, List, Dict, Any, TypedDict
-from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.graph import StateGraph, START, END
 from pydantic import BaseModel, Field
+from langchain_groq import ChatGroq
 
 # 1. Configuration & Clients
-# Using ChatOpenAI compatible client for OpenRouter
-llm = ChatOpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-    model="tngtech/deepseek-r1t2-chimera:free",
+llm = ChatGroq(
+    api_key=os.getenv("GROQ_API_KEY"),
+    model = "llama-3.1-8b-instant",
     temperature=0.3
 )
 
