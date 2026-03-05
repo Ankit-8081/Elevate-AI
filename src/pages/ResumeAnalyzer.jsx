@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
 import Header from "../components/header";
 import {
   UploadCloud,
@@ -54,11 +55,38 @@ export default function ResumeAnalyzer() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const uploadedFile = e.target.files?.[0];
-    if (uploadedFile) {
-      setFile(uploadedFile);
-      simulateAnalysis();
+
+    if (!uploadedFile) return;
+
+    setFile(uploadedFile);
+
+    const formData = new FormData();
+    formData.append("file", uploadedFile);
+
+    try {
+
+      setIsAnalyzing(true);
+
+      const res = await axios.post(
+        "http://localhost:8000/upload-resume",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      console.log(res.data);
+
+      setIsAnalyzing(false);
+      setShowResults(true);
+
+    } catch (error) {
+      console.error(error);
+      setIsAnalyzing(false);
     }
   };
 

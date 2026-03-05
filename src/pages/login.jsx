@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Icons = {
   User: () => (
@@ -19,18 +21,17 @@ const Icons = {
   ),
   Linkedin: () => (
     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5z" />
     </svg>
   ),
   Eye: () => (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
     </svg>
   ),
   EyeOff: () => (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3l18 18" />
     </svg>
   ),
   ChevronRight: () => (
@@ -40,14 +41,15 @@ const Icons = {
   ),
 };
 
-const InputField = ({ icon: Icon, type = "text", name, placeholder, value, onChange, error, toggleIcon, onToggle }) => (
+const InputField = ({ icon: Icon, type="text", name, placeholder, value, onChange, error, toggleIcon, onToggle }) => (
   <div className="group space-y-1">
     <div className={`relative flex items-center bg-[#0f172a]/50 backdrop-blur-sm border transition-all duration-300 rounded-lg overflow-hidden
-      ${error ? "border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]" : "border-cyan-900/30 group-hover:border-cyan-500/50 group-focus-within:border-cyan-400 group-focus-within:shadow-[0_0_15px_rgba(6,182,212,0.3)]"}
-    `}>
-      <div className="pl-4 text-cyan-500/70 group-focus-within:text-cyan-400">
+      ${error ? "border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]" : "border-cyan-900/30 group-hover:border-cyan-500/50 group-focus-within:border-cyan-400 group-focus-within:shadow-[0_0_15px_rgba(6,182,212,0.3)]"}`}>
+      
+      <div className="pl-4 text-cyan-500/70">
         <Icon />
       </div>
+
       <input
         type={type}
         name={name}
@@ -55,99 +57,125 @@ const InputField = ({ icon: Icon, type = "text", name, placeholder, value, onCha
         onChange={onChange}
         placeholder={placeholder}
         className="w-full bg-transparent px-4 py-3 text-sm text-white placeholder-gray-400 focus:outline-none font-mono"
-        autoComplete="off"
       />
+
       {toggleIcon && (
-        <button type="button" onClick={onToggle} className="pr-4 text-cyan-500/50 hover:text-cyan-300 transition-colors">
+        <button type="button" onClick={onToggle} className="pr-4 text-cyan-500/50 hover:text-cyan-300">
           {toggleIcon}
         </button>
       )}
     </div>
+
     {error && <p className="text-red-400 text-[10px] tracking-wider pl-1 font-mono animate-pulse">{`> ${error}`}</p>}
   </div>
 );
 
 function Login() {
+
   const navigate = useNavigate();
+
   const [isSignup, setIsSignup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  const [form, setForm] = useState({ name: "", linkedin: "", email: "", password: "" });
+  const [form, setForm] = useState({
+    name:"",
+    linkedin:"",
+    email:"",
+    password:""
+  });
+
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    const handleMouseMove = (e) => {
+  useEffect(()=>{
+    const handleMouseMove = (e)=>{
       setMousePos({
-        x: (e.clientX / window.innerWidth) * 20 - 10,
-        y: (e.clientY / window.innerHeight) * 20 - 10,
+        x:(e.clientX / window.innerWidth) * 20 - 10,
+        y:(e.clientY / window.innerHeight) * 20 - 10
       });
     };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: null });
+    window.addEventListener("mousemove",handleMouseMove);
+    return ()=>window.removeEventListener("mousemove",handleMouseMove);
+  },[]);
+
+  const handleChange = (e)=>{
+    setForm({...form,[e.target.name]:e.target.value});
+    if(errors[e.target.name]) setErrors({...errors,[e.target.name]:null});
   };
 
-  const validate = () => {
-    let err = {};
-    if (!form.email) err.email = "MISSING_CREDENTIAL";
-    else if (form.email !== "1000" && !/\S+@\S+\.\S+/.test(form.email)) err.email = "INVALID_SYNTAX";
-    if (!form.password) err.password = "KEY_REQUIRED";
-    if (isSignup) {
-      if (!form.name) err.name = "IDENTITY_REQUIRED";
-      if (!form.linkedin) err.linkedin = "LINK_REQUIRED";
+  const validate = ()=>{
+    let err={};
+
+    if(!form.email) err.email="EMAIL_REQUIRED";
+    if(!form.password) err.password="PASSWORD_REQUIRED";
+
+    if(isSignup){
+      if(!form.name) err.name="NAME_REQUIRED";
+      if(!form.linkedin) err.linkedin="LINKEDIN_REQUIRED";
     }
+
     return err;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (isSignup) {
-      const err = validate();
-      setErrors(err);
-      if (Object.keys(err).length === 0) {
-        setErrors({ general: "Sign up is disabled in this demo. Please use login with ID 1000 and password 3000" });
-      }
-      return;
-    }
+  const handleSubmit = async (e)=>{
 
-    // Login validation
+    e.preventDefault();
+
     const err = validate();
     setErrors(err);
 
-    if (form.email !== "1000" || form.password !== "3000") {
-      setErrors(prev => ({ ...prev, password: "Invalid ID or Password" }));
-      return;
-    }
+    if(Object.keys(err).length>0) return;
 
-    if (Object.keys(err).length > 0) return;
+    try{
 
-    // Fake successful login
-    const fakeUser = {
-      id: "1000",
-      name: "Aayush",
-      email: "demo@elevate.ai",
-      role: "Pro Member",
-      lastLogin: new Date().toISOString()
-    };
+      setLoading(true);
 
-    localStorage.setItem("user", JSON.stringify(fakeUser));
+      if(isSignup){
 
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+        await axios.post("http://localhost:8000/signup",{
+          name: form.name,
+          linkedin: form.linkedin,
+          email: form.email,
+          password: form.password
+        });
+
+        setErrors({general:"Signup successful. Please login."});
+        setForm({name:"", linkedin:"", email:"", password:""});
+        setIsSignup(false);
+        return;
+      }
+
+      const res = await axios.post("http://localhost:8000/login",{
+        email:form.email,
+        password:form.password
+      });
+
+      const {token,user} = res.data;
+
+      localStorage.setItem("token",token);
+      localStorage.setItem("user",JSON.stringify(user));
+
       navigate("/dashboard");
-    }, 1800);
+
+    }catch(error){
+
+      if(error.response){
+        setErrors({
+                    general: error.response?.data?.detail?.[0]?.msg || "Authentication failed"
+                  });
+      }else{
+        setErrors({general:"Server unreachable"});
+      }
+
+    }finally{
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#050b14] text-slate-200 relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-cyan-100">
+<div className="min-h-screen flex items-center justify-center bg-[#050b14] text-slate-200 relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-cyan-100">
       
       <div 
         className="absolute inset-0 z-0 pointer-events-none"
@@ -301,3 +329,4 @@ function Login() {
 }
 
 export default Login;
+
