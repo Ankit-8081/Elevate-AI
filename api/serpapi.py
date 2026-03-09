@@ -60,8 +60,8 @@ def get_serp_jobs(title=None, location=None, latest_only=False):
 # --- TEST ---
 if __name__ == "__main__":
     # Example: Finding AI Engineer jobs in Delhi posted TODAY
-    print("Searching for LATEST AI Engineer jobs in Delhi...")
-    result = get_serp_jobs(title="AI Engineer", location="Delhi", latest_only=False)
+    print("Searching for LATEST AI Engineer jobs in Mumbai...")
+    result = get_serp_jobs(title="AI Engineer", location="Mumbai")
     
     if result.get("jobs"):
         print(f"Found {result['count']} jobs!")
