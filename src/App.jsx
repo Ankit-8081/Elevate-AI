@@ -7,6 +7,7 @@ import JobMatchesPage from "./pages/Jobs";
 import Interview from "./pages/Interview";
 import FindJobs from "./pages/Find_jobs";
 import ResumeBuilder from "./pages/ResumeBuilder";
+import SkillRoadmap from "./pages/Roadmap";
 
 
 
@@ -75,6 +76,14 @@ function App() {
         element={
           <ProtectedRoute>
             <ResumeBuilder/>
+          </ProtectedRoute>
+        }
+      />
+       <Route
+        path="/Roadmap"
+        element={
+          <ProtectedRoute>
+            <SkillRoadmap/>
           </ProtectedRoute>
         }
       />
