@@ -16,7 +16,6 @@ import Sidebar from '../components/sidebar.jsx';
 import Header from '../components/header.jsx';
 import { useNavigate } from "react-router-dom";
 
-// --- Sub-Components ---
 
 const StatCard = ({ icon: Icon, label, value, color }) => (
   <motion.div
@@ -37,14 +36,13 @@ const StatCard = ({ icon: Icon, label, value, color }) => (
   </motion.div>
 );
 
-// --- Main Component ---
 
 export default function CareerDashboard() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Elegant logout transition could be added here
+  
     localStorage.removeItem("token");
     navigate("/login");
   };
@@ -74,13 +72,11 @@ export default function CareerDashboard() {
         style={{ marginLeft: "var(--sidebar-width)" }}
         className="flex-1 flex flex-col relative overflow-hidden"
       >
-        {/* Background Glows */}
         <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="flex-1 overflow-y-auto p-8 max-w-7xl mx-auto w-full relative z-10">
           
-          {/* Header Section */}
           <section className="mb-10 flex justify-between items-end">
             <div>
               <motion.div
@@ -98,7 +94,6 @@ export default function CareerDashboard() {
               
             </div>
 
-            {/* Aesthetic Sign Out Button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -122,13 +117,10 @@ export default function CareerDashboard() {
             <StatCard icon={Sparkles} label="Interview Ready" value="92%" color="bg-amber-500" />
           </section>
 
-          {/* Main Dashboard Layout */}
           <div className="grid lg:grid-cols-3 gap-8">
-            
-            {/* Left Content Column */}
+          
             <div className="lg:col-span-2 flex flex-col gap-8">
               
-              {/* Resume Insights Card */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -161,7 +153,6 @@ export default function CareerDashboard() {
                 </div>
               </motion.div>
 
-              {/* Job Recommendations List */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-white px-1 flex justify-between items-center">
                   Top Recommendations
@@ -200,10 +191,8 @@ export default function CareerDashboard() {
               </div>
             </div>
 
-            {/* Right Side Column */}
             <div className="flex flex-col gap-8">
               
-              {/* AI Copilot Widget */}
               <div className="bg-gradient-to-br from-blue-600/20 via-blue-600/5 to-transparent border border-blue-500/20 rounded-2xl p-6 backdrop-blur-md">
                 <div className="flex items-center gap-2 mb-6">
                   <div className="p-1.5 bg-blue-500 rounded-lg shadow-lg shadow-blue-500/20">
@@ -232,7 +221,6 @@ export default function CareerDashboard() {
                 </div>
               </div>
 
-              {/* Learning Milestone Card */}
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <h3 className="text-sm font-semibold text-white mb-4 flex justify-between items-center">
                   Next Milestone

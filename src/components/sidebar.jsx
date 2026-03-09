@@ -7,7 +7,7 @@ import {
   Briefcase,
   Map,
   Mic2,
-  Settings,
+  User,
   Sparkles,
   Search,
   FileEdit,
@@ -18,18 +18,15 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Load sidebar state from localStorage
   const [expanded, setExpanded] = useState(() => {
     const saved = localStorage.getItem("sidebar-expanded");
     return saved ? JSON.parse(saved) : true;
   });
 
-  // Save state whenever it changes
   useEffect(() => {
     localStorage.setItem("sidebar-expanded", JSON.stringify(expanded));
   }, [expanded]);
 
-  // Set sidebar width on initial mount
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--sidebar-width",
@@ -45,7 +42,7 @@ const Sidebar = () => {
     { name: "Resume Builder", icon: FileEdit, path: "/ResumeBuilder" },
     { name: "Skill Roadmap", icon: Map, path: "/Roadmap" },
     { name: "Interview", icon: Mic2, path: "/Interview" },
-    { name: "Settings", icon: Settings, path: "/settings" },
+    { name: "Profile", icon: User, path: "/profile" },
   ];
 
   return (
@@ -61,7 +58,6 @@ const Sidebar = () => {
   className="fixed left-0 top-0 h-screen border-r border-white/5 bg-black/30 backdrop-blur-xl flex flex-col px-3 py-4 z-50"
 >
 
-      {/* Logo */}
       <div
         onClick={() => navigate("/Dashboard")}
         className="flex items-center gap-3 mb-8 cursor-pointer px-2"
@@ -77,7 +73,6 @@ const Sidebar = () => {
         )}
       </div>
 
-      {/* Navigation */}
       <nav className="space-y-2 flex-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -111,7 +106,6 @@ const Sidebar = () => {
         })}
       </nav>
 
-      {/* Toggle Button */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="absolute -right-3 top-8 w-7 h-7 flex items-center justify-center rounded-full bg-[#0a0a0c] border border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition"
