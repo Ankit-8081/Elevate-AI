@@ -123,7 +123,7 @@ export default function ResumeDashboard() {
         <div className="absolute top-[-20%] left-[10%] w-[600px] h-[600px] bg-cyan-500/10 blur-[150px] rounded-full pointer-events-none" />
         <div className="absolute bottom-[-20%] right-[10%] w-[500px] h-[500px] bg-violet-600/10 blur-[150px] rounded-full pointer-events-none" />
 
-        <Header />
+
 
       <main
   className={`flex-1 p-8 max-w-7xl mx-auto w-full relative z-10 custom-scrollbar ${data ? 'overflow-y-auto' : 'overflow-hidden'}`}

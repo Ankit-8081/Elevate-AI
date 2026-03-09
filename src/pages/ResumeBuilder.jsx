@@ -56,11 +56,9 @@ const ResumeBuilder = () => {
   style={{ marginLeft: "var(--sidebar-width)" }}
 className="flex-1 flex flex-col min-h-0">
 
-    <Header/>
-
     <div className="flex flex-1 min-h-0 overflow-hidden">
         <section className="w-[35%] bg-[#0f0f12] border-r border-white/5 flex flex-col relative">
-          <div className="p-3 border-b border-white/5 flex items-center justify-between bg-black/20">
+          <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-black/20">
             <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500 flex items-center gap-2">
               <FileText size={12} /> Live Preview
             </span>
@@ -101,7 +99,7 @@ className="flex-1 flex flex-col min-h-0">
         </section>
 
         <section className="w-[40%] bg-[#0a0a0c] flex flex-col">
-          <div className="p-3 border-b border-white/5 flex items-center justify-between bg-black/20">
+          <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-black/20">
             <div className="flex items-center gap-4">
                <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500 flex items-center gap-2">
                 <Code2 size={12} /> main.tex
@@ -137,7 +135,7 @@ className="flex-1 flex flex-col min-h-0">
         </section>
 
         <section className="w-[25%] bg-[#0f0f12] border-l border-white/5 flex flex-col">
-          <div className="p-3 border-b border-white/5 bg-black/20">
+          <div className="px-5 py-5 border-b border-white/5 bg-black/20 flex items-center">
             <span className="text-[10px] uppercase tracking-widest font-bold text-indigo-400 flex items-center gap-2">
               <Sparkles size={12} /> AI Career Copilot
             </span>

@@ -72,8 +72,6 @@ export default function CareerDashboard() {
         <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none" />
 
-        <Header/>
-
         <div className="flex-1 overflow-y-auto p-8 max-w-7xl mx-auto w-full">
           <section className="mb-10">
             <motion.div 

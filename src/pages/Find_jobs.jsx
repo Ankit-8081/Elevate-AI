@@ -6,7 +6,7 @@ import {
   Loader2, X, CheckCircle2, AlertCircle 
 } from 'lucide-react';
 import Sidebar from '../components/sidebar';
-import Header from '../components/header';
+
 
 
 
@@ -56,7 +56,7 @@ const FindJobs = () => {
       <Sidebar />
       
       <div className="flex-1 flex flex-col">
-        <Header />
+
         
         <main
   style={{ marginLeft: "var(--sidebar-width)" }}
@@ -69,9 +69,9 @@ const FindJobs = () => {
               animate={{ opacity: 1, y: 0 }}
               className="text-center space-y-6 py-10"
             >
-              <h2 className="text-4xl lg:text-6xl font-bold tracking-tight text-white">
+              <h3 className="text-4xl lg:text-6xl font-bold tracking-tight text-white">
                 Find Your Next <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Opportunity</span>
-              </h2>
+              </h3>
               <p className="text-slate-400 max-w-2xl mx-auto text-lg">
                 Search jobs across LinkedIn, Naukri, and the open web powered by AI matching.
               </p>
