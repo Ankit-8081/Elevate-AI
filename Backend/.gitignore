@@ -1,5 +1,4 @@
 node_modules/
 __pycache__/
-*.db
 .env
 Backend/uploads/
