@@ -10,6 +10,10 @@ import sqlite3
 import shutil
 import uuid
 import os
+import whisper
+
+from interview_ai import generate_question, evaluate_answer
+from models import InterviewStart, InterviewAnswer
 
 from chatbot_service import ask_bot
 from web_scraping import LinkedInScraper, NaukriScraper, SerpApiScraper
@@ -304,4 +308,40 @@ def chat_ai(
 
     return {
         "reply": response
+    }
+
+@app.post("/interview/start")
+def start_interview(data: InterviewStart):
+
+    question = generate_question(
+        role=data.role,
+        difficulty=data.difficulty
+    )
+
+    return {
+        "question": question
+    }
+
+@app.post("/interview/start")
+def start_interview(data: InterviewStart):
+
+    question = generate_question(
+        role=data.role,
+        difficulty=data.difficulty
+    )
+
+    return {
+        "question": question
+    }
+
+@app.post("/interview/submit")
+def submit_answer(data: InterviewAnswer):
+
+    result = evaluate_answer(
+        data.question,
+        data.answer
+    )
+
+    return {
+        "analysis": result
     }
