@@ -1,6 +1,11 @@
+<<<<<<< HEAD
 # Python
 __pycache__/
 *.pyc
 
 # Node
 node_modules/
+=======
+test
+.env
+>>>>>>> 7fb792fbf1f6d0630b4f6bbf0aced6349f443a71
