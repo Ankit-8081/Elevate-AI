@@ -84,15 +84,10 @@ export default function CareerDashboard() {
   }, [navigate]);
   
   const askAI = async () => {
-
     if (!prompt.trim()) return;
-
     const token = localStorage.getItem("token");
-
     setLoadingAI(true);
-
     try {
-
       const res = await axios.post(
         "http://127.0.0.1:8000/ai/chat",
         { message: prompt },
@@ -102,13 +97,10 @@ export default function CareerDashboard() {
           }
         }
       );
-
       setAiReply(res.data.reply);
-
     } catch (err) {
       console.error("AI error:", err);
     }
-
     setLoadingAI(false);
   };
 
@@ -206,14 +198,10 @@ export default function CareerDashboard() {
             </div>
 
             <div className="lg:col-span-4">
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 flex flex-col relative overflow-hidden group h-full">
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col relative overflow-hidden group">
                 <div className="absolute inset-0 bg-emerald-600/[0.02] group-hover:bg-emerald-600/[0.05] transition-colors" />
-                
                 <div className="flex justify-between items-start mb-8">
-                  <div>
-                    <h3 className="text-xl font-bold text-white mb-1">Skill Breakdown</h3>
-                    <p className="text-xs text-slate-500 uppercase tracking-tighter font-bold">Current Proficiency</p>
-                  </div>
+                  <h3 className="text-xl font-bold text-white mb-1">Skill Breakdown</h3>
                   <div className="relative w-12 h-12">
                     <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse" />
                     <div className="relative w-full h-full rounded-full border border-emerald-500/30 flex items-center justify-center bg-[#0a121e]">
@@ -222,26 +210,16 @@ export default function CareerDashboard() {
                   </div>
                 </div>
 
-                <div className="w-full space-y-5 flex-1">
+                <div className="w-full space-y-4">
                   {[
-                    { name: 'React/Next.js', level: 90, color: 'from-blue-600 to-blue-400' },
-                    { name: 'TypeScript', level: 75, color: 'from-indigo-600 to-indigo-400' },
-                    { name: 'Node.js', level: 60, color: 'from-emerald-600 to-emerald-400' },
-                    { name: 'System Design', level: 45, color: 'from-purple-600 to-purple-400' },
+                    { name: 'React/Next.js', color: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20' },
+                    { name: 'TypeScript', color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' },
+                    { name: 'Node.js', color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
+                    { name: 'System Design', color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20' },
                   ].map((skill) => (
-                    <div key={skill.name}>
-                      <div className="flex justify-between items-end mb-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{skill.name}</span>
-                        <span className="text-xs font-black text-white">{skill.level}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${skill.level}%` }}
-                          transition={{ duration: 1, ease: "easeOut" }}
-                          className={`h-full bg-gradient-to-r ${skill.color} rounded-full`}
-                        />
-                      </div>
+                    <div key={skill.name} className={`flex justify-between items-center p-4 ${skill.bg} border ${skill.border} rounded-2xl backdrop-blur-sm transition-transform hover:scale-[1.02]`}>
+                      <span className="text-[11px] font-bold text-white uppercase tracking-wider">{skill.name}</span>
+                      <span className={`text-[10px] font-black uppercase tracking-tighter ${skill.color}`}>{skill.level}</span>
                     </div>
                   ))}
                 </div>
@@ -261,14 +239,20 @@ export default function CareerDashboard() {
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider">AI Copilot</h3>
                 </div>
                 <div className="space-y-3">
-                  <button className="w-full text-left p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all text-xs text-slate-300">
+                  <button 
+                    onClick={() => setPrompt("Optimize my resume for Stripe")}
+                    className="w-full text-left p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all text-xs text-slate-300"
+                  >
                     Optimize my resume for Stripe
                   </button>
-                  <button className="w-full text-left p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all text-xs text-slate-300">
+                  <button 
+                    onClick={() => setPrompt("What skills am I missing for Lead roles?")}
+                    className="w-full text-left p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all text-xs text-slate-300"
+                  >
                     What skills am I missing for Lead roles?
                   </button>
                   <div className="pt-2 relative">
-                      <input
+                    <input
                       type="text"
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
@@ -278,16 +262,14 @@ export default function CareerDashboard() {
                       placeholder="Ask your career agent..."
                       className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 px-4 text-xs focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-600"
                     />
-                      
-                      {loadingAI && (
-                        <p className="text-xs text-slate-500 mt-2">AI is thinking...</p>
-                      )}
-
-                      {aiReply && (
-                        <div className="mt-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-slate-300">
-                          {aiReply}
-                        </div>
-                      )}
+                    {loadingAI && (
+                      <p className="text-xs text-slate-500 mt-2">AI is thinking...</p>
+                    )}
+                    {aiReply && (
+                      <div className="mt-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-slate-300">
+                        {aiReply}
+                      </div>
+                    )}
                     <ArrowUpRight
                       size={14}
                       onClick={askAI}
