@@ -272,19 +272,19 @@ def get_jobs():
     jobs = []
 
     try:
-        linkedin_jobs = linkedin.fetch_jobs("Software Engineer", "India")
+        linkedin_jobs = linkedin.fetch_jobs("", "India")
         if isinstance(linkedin_jobs, list):
             for j in linkedin_jobs:
                 j["source"] = "LinkedIn"
                 jobs.append(j)
 
-        naukri_jobs = naukri.fetch_jobs("Software Engineer", "India")
+        naukri_jobs = naukri.fetch_jobs("", "India")
         if isinstance(naukri_jobs, list):
             for j in naukri_jobs:
                 j["source"] = "Naukri"
                 jobs.append(j)
 
-        web_jobs = web.fetch_jobs("Software Engineer", "India")
+        web_jobs = web.fetch_jobs("", "India")
         if isinstance(web_jobs, list):
             for j in web_jobs:
                 j["source"] = "Web"

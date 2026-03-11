@@ -96,7 +96,7 @@ class NaukriScraper(JobScraper):
 
 class SerpApiScraper(JobScraper):
     def __init__(self):
-        self.api_key = os.getenv("SERP_API_KEY")
+        self.api_key = os.getenv("Serp_API_Key")
 
     def fetch_jobs(self, title="Software Engineer", location="United States"):
         query_string = f"{title or ''} {location or ''}".strip()

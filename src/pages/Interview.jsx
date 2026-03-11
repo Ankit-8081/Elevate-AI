@@ -100,7 +100,7 @@ const WebcamPreview = () => {
 };
 
 
-export default function InterviewSimulator() {
+export default function InterviewSimulator() {  
   const [mode, setMode] = useState('video');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [answer, setAnswer] = useState("");

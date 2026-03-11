@@ -19,7 +19,7 @@ class PersistentChatbot:
     def __init__(self, model_name: str = "llama-3.3-70b-versatile", max_tokens: int = 100):
         self.model = ChatGroq(
             model=model_name,
-            groq_api_key=os.getenv("GROQ_API_KEY")
+            groq_api_key=os.getenv("GROQ-API-KEY")
         )
         self._store = {}
         self.trimmer = trim_messages(
