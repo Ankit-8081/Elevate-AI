@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from "react";
 import {
-  Search, MapPin, Briefcase, Globe,
-  Sparkles, Bookmark, ChevronRight,
-  Loader2, X, CheckCircle2, AlertCircle
-} from 'lucide-react';
-import Sidebar from '../components/sidebar';
+  Search,
+  MapPin,
+  Briefcase,
+  Bookmark,
+  ChevronRight,
+  Loader2,
+  X,
+  AlertCircle,
+} from "lucide-react";
+import Sidebar from "../components/sidebar";
 
 const FindJobs = () => {
   const [loading, setLoading] = useState(false);
@@ -13,76 +18,103 @@ const FindJobs = () => {
   const [selectedJob, setSelectedJob] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState({
-    query: '',
-    location: '',
-    experience: 'Intermediate',
-    sources: ['linkedin', 'naukri', 'web']
+    query: "",
+    location: "",
+    experience: "Intermediate",
+    sources: ["linkedin", "naukri", "web"],
   });
 
   const sources = [
-    { id: 'linkedin', label: 'LinkedIn', color: 'bg-blue-600' },
-    { id: 'naukri', label: 'Naukri', color: 'bg-orange-500' },
-    { id: 'web', label: 'Web Jobs', color: 'bg-emerald-500' }
+    { id: "linkedin", label: "LinkedIn", color: "bg-blue-600" },
+    { id: "naukri", label: "Naukri", color: "bg-orange-500" },
+    { id: "web", label: "Web Jobs", color: "bg-emerald-500" },
   ];
 
-  const handleSearch = (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  const fetchJobs = async () => {
     setLoading(true);
 
-    setTimeout(() => {
-      const mockJobs = [
-        {
-          id: 1,
-          title: "Machine Learning Engineer",
-          company: "Google",
-          location: "Bangalore",
-          salary: "₹20–35 LPA",
-          source: "LinkedIn",
-          match_score: 92,
-          description: "Lead the development of LLM frameworks...",
-          skills: ["Python", "PyTorch", "Transformers"]
-        },
-        {
-          id: 2,
-          title: "Senior AI Researcher",
-          company: "Anthropic",
-          location: "Remote",
-          salary: "$180k - $240k",
-          source: "Web",
-          match_score: 74,
-          description: "Focus on safety-first alignment...",
-          skills: ["RLHF", "NLP"]
-        },
-        {
-          id: 3,
-          title: "Data Scientist",
-          company: "Zomato",
-          location: "Gurgaon",
-          salary: "₹15–25 LPA",
-          source: "Naukri",
-          match_score: 58,
-          description: "Optimize delivery routes using graph networks...",
-          skills: ["SQL", "Pandas"]
-        }
-      ];
+    try {
+      const res = await fetch("http://localhost:8000/jobs");
+      const data = await res.json();
 
-      setJobs(mockJobs);
-      setLoading(false);
-    }, 1500);
+      const formattedJobs = (data.jobs || []).map((job, i) => ({
+        id: i,
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        salary: "Not specified",
+        source: job.source || "Web",
+        match_score: Math.floor(Math.random() * 40) + 60,
+        description: job.description,
+        skills: [],
+        url: job.url,
+      }));
+
+      setJobs(formattedJobs);
+    } catch (err) {
+      console.error("Initial job fetch failed:", err);
+    }
+
+    setLoading(false);
+  };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+
+    if (!searchQuery.query) {
+      alert("Please enter a job title");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:8000/jobs/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(searchQuery),
+      });
+
+      const data = await res.json();
+
+      const formattedJobs = (data.jobs || []).map((job, i) => ({
+        id: i,
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        salary: "Not specified",
+        source: job.source || "Web",
+        match_score: Math.floor(Math.random() * 40) + 60,
+        description: job.description,
+        skills: [],
+        url: job.url,
+      }));
+
+      setJobs(formattedJobs);
+    } catch (err) {
+      console.error("Job search failed:", err);
+    }
+
+    setLoading(false);
   };
 
   const toggleSource = (id) => {
-    setSearchQuery(prev => ({
+    setSearchQuery((prev) => ({
       ...prev,
       sources: prev.sources.includes(id)
-        ? prev.sources.filter(s => s !== id)
-        : [...prev.sources, id]
+        ? prev.sources.filter((s) => s !== id)
+        : [...prev.sources, id],
     }));
   };
 
   return (
     <div className="flex min-h-screen bg-[#050b14] text-slate-200 font-sans selection:bg-indigo-500/30">
-
       <Sidebar />
 
       <main
@@ -91,12 +123,13 @@ const FindJobs = () => {
       >
         <div className="max-w-7xl mx-auto space-y-6">
 
+          {/* HERO */}
+
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center space-y-6 py-10"
           >
-
             <h3 className="text-4xl lg:text-6xl font-bold tracking-tight text-white">
               Find Your Next{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
@@ -112,14 +145,19 @@ const FindJobs = () => {
               onSubmit={handleSearch}
               className="relative max-w-4xl mx-auto mt-2 p-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl flex flex-col md:flex-row gap-2"
             >
-
               <div className="flex-1 flex items-center px-4 gap-3 border-r border-white/10">
                 <Search className="text-slate-500" size={20} />
                 <input
                   type="text"
+                  value={searchQuery.query}
                   placeholder="Job title or keywords"
                   className="bg-transparent border-none outline-none w-full py-3 text-white placeholder:text-slate-500"
-                  onChange={(e) => setSearchQuery({ ...searchQuery, query: e.target.value })}
+                  onChange={(e) =>
+                    setSearchQuery({
+                      ...searchQuery,
+                      query: e.target.value,
+                    })
+                  }
                 />
               </div>
 
@@ -127,53 +165,66 @@ const FindJobs = () => {
                 <MapPin className="text-slate-500" size={20} />
                 <input
                   type="text"
+                  value={searchQuery.location}
                   placeholder="Location"
                   className="bg-transparent border-none outline-none w-full py-3 text-white placeholder:text-slate-500"
-                  onChange={(e) => setSearchQuery({ ...searchQuery, location: e.target.value })}
+                  onChange={(e) =>
+                    setSearchQuery({
+                      ...searchQuery,
+                      location: e.target.value,
+                    })
+                  }
                 />
               </div>
 
               <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20">
                 {loading ? <Loader2 className="animate-spin" /> : "Search Jobs"}
               </button>
-
             </form>
 
             <div className="flex flex-wrap justify-center gap-3 mt-6">
-              {sources.map(source => (
+              {sources.map((source) => (
                 <button
                   key={source.id}
                   onClick={() => toggleSource(source.id)}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all flex items-center gap-2
-                  ${searchQuery.sources.includes(source.id)
-                      ? 'bg-white/10 border-white/20 text-white'
-                      : 'bg-transparent border-white/5 text-slate-500 hover:border-white/10'}`}
+                  ${
+                    searchQuery.sources.includes(source.id)
+                      ? "bg-white/10 border-white/20 text-white"
+                      : "bg-transparent border-white/5 text-slate-500 hover:border-white/10"
+                  }`}
                 >
-                  <div className={`w-2 h-2 rounded-full ${searchQuery.sources.includes(source.id) ? source.color : 'bg-slate-600'}`} />
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      searchQuery.sources.includes(source.id)
+                        ? source.color
+                        : "bg-slate-600"
+                    }`}
+                  />
                   {source.label}
                 </button>
               ))}
             </div>
-
           </motion.section>
 
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* JOB LIST */}
 
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <AnimatePresence>
 
               {loading ? (
-
                 <div className="col-span-full py-20 text-center space-y-4">
                   <Loader2 className="animate-spin mx-auto text-indigo-500" size={40} />
-                  <p className="text-slate-400 animate-pulse">
-                    Searching across LinkedIn, Naukri, and Web jobs...
-                  </p>
                 </div>
 
               ) : jobs.length > 0 ? (
 
                 jobs.map((job) => (
-                  <JobCard key={job.id} job={job} onOpen={() => setSelectedJob(job)} />
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    onOpen={() => setSelectedJob(job)}
+                  />
                 ))
 
               ) : (
@@ -181,32 +232,32 @@ const FindJobs = () => {
                 <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-3xl">
                   <AlertCircle className="mx-auto text-slate-600 mb-4" size={48} />
                   <h3 className="text-xl font-medium text-white">No jobs found</h3>
-                  <p className="text-slate-500 mt-2">Try adjusting your filters or search keywords.</p>
                 </div>
 
               )}
 
             </AnimatePresence>
-
           </section>
-
         </div>
       </main>
 
       <AnimatePresence>
-        {selectedJob && <JobModal job={selectedJob} onClose={() => setSelectedJob(null)} />}
+        {selectedJob && (
+          <JobModal job={selectedJob} onClose={() => setSelectedJob(null)} />
+        )}
       </AnimatePresence>
-
     </div>
   );
 };
 
+/* ---------------- JOB CARD ---------------- */
+
 const JobCard = ({ job, onOpen }) => {
 
   const getScoreColor = (score) => {
-    if (score >= 80) return 'text-emerald-400 bg-emerald-400/10';
-    if (score >= 60) return 'text-amber-400 bg-amber-400/10';
-    return 'text-rose-400 bg-rose-400/10';
+    if (score >= 80) return "text-emerald-400 bg-emerald-400/10";
+    if (score >= 60) return "text-amber-400 bg-amber-400/10";
+    return "text-rose-400 bg-rose-400/10";
   };
 
   const getSourceColor = (source) => {
@@ -265,6 +316,8 @@ const JobCard = ({ job, onOpen }) => {
   );
 };
 
+/* ---------------- JOB MODAL ---------------- */
+
 const JobModal = ({ job, onClose }) => {
   return (
     <motion.div
@@ -310,8 +363,11 @@ const JobModal = ({ job, onClose }) => {
 
           <div className="flex gap-4 pt-4 border-t border-white/5">
 
-            <button className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all">
-              Apply on {job.source}
+            <button
+              onClick={() => window.open(job.url, "_blank")}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all"
+            >
+              Apply
             </button>
 
             <button className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">

@@ -92,7 +92,7 @@ export default function ResumeDashboard() {
     setAnalyzing(true);
 
     const formData = new FormData();
-    formData.append('resume', selected);
+    formData.append('file', selected);
 
     try {
       const res = await axios.post('http://localhost:8000/upload-resume', formData);

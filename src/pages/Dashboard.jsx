@@ -56,6 +56,9 @@ const ActivityItem = ({ title, time, type }) => (
 
 export default function CareerDashboard() {
   const [user, setUser] = useState(null);
+  const [prompt, setPrompt] = useState("");
+  const [aiReply, setAiReply] = useState("");
+  const [loadingAI, setLoadingAI] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -79,6 +82,35 @@ export default function CareerDashboard() {
         if (err.response?.status === 401) navigate("/login");
       });
   }, [navigate]);
+  
+  const askAI = async () => {
+
+    if (!prompt.trim()) return;
+
+    const token = localStorage.getItem("token");
+
+    setLoadingAI(true);
+
+    try {
+
+      const res = await axios.post(
+        "http://127.0.0.1:8000/ai/chat",
+        { message: prompt },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      setAiReply(res.data.reply);
+
+    } catch (err) {
+      console.error("AI error:", err);
+    }
+
+    setLoadingAI(false);
+  };
 
   return (
     <div className="min-h-screen bg-[#050b14] text-slate-200 flex font-sans selection:bg-blue-500/30">
@@ -236,12 +268,31 @@ export default function CareerDashboard() {
                     What skills am I missing for Lead roles?
                   </button>
                   <div className="pt-2 relative">
-                    <input
+                      <input
                       type="text"
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") askAI();
+                      }}
                       placeholder="Ask your career agent..."
                       className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 px-4 text-xs focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-600"
                     />
-                    <ArrowUpRight size={14} className="absolute right-3 top-[28px] text-slate-500" />
+                      
+                      {loadingAI && (
+                        <p className="text-xs text-slate-500 mt-2">AI is thinking...</p>
+                      )}
+
+                      {aiReply && (
+                        <div className="mt-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-slate-300">
+                          {aiReply}
+                        </div>
+                      )}
+                    <ArrowUpRight
+                      size={14}
+                      onClick={askAI}
+                      className="absolute right-3 top-[28px] text-slate-500 cursor-pointer"
+                    />
                   </div>
                 </div>
               </div>
