@@ -86,8 +86,10 @@ const JobMatchesPage = () => {
       <Sidebar />
        
 
-       <main className="flex-1 overflow-y-auto">
-          <Header />
+       <main
+  style={{ marginLeft: "var(--sidebar-width)" }}
+  className="flex-1 overflow-y-auto"
+>
           <div className="p-4 lg:p-8">
 
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
@@ -102,7 +104,7 @@ const JobMatchesPage = () => {
               </section>
 
               <div className="flex flex-wrap items-center gap-3 mb-8">
-                {['Role', 'Location', 'Experience'].map((filter) => (
+                {['Role', 'Location'].map((filter) => (
                   <button key={filter} className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 flex items-center gap-2 text-sm transition-all">
                     {filter} <ChevronDown className="w-4 h-4" />
                   </button>

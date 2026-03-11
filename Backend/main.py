@@ -144,6 +144,30 @@ def dashboard(credentials: HTTPAuthorizationCredentials = Depends(security)):
         "user": user_id
     }
 
+@app.get("/me")
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+
+    token = credentials.credentials
+    email = verify_token(token)
+
+    cursor.execute(
+        "SELECT name, linkedin, email FROM users WHERE email=?",
+        (email,)
+    )
+
+    user = cursor.fetchone()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    name, linkedin, email = user
+
+    return {
+        "name": name,
+        "linkedin": linkedin,
+        "email": email
+    }
+
 UPLOAD_DIR = "uploads"
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)

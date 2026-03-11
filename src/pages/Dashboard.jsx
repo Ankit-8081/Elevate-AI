@@ -1,129 +1,274 @@
-import React from 'react';
-import Sidebar from "../components/sidebar";
-import Header from "../components/header";
+import React, { useState, useEffect } from 'react';
+import axios from "axios";
 import {
-  Sparkles,
+  FileText,
+  Briefcase,
+  Cpu,
   CheckCircle2,
   AlertCircle,
-  ChevronRight,
-  TrendingUp
+  ArrowUpRight,
+  Sparkles,
+  LogOut,
+  User as UserIcon,
+  TrendingUp,
+  Clock,
+  Zap
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import Sidebar from '../components/sidebar.jsx';
+import { useNavigate } from "react-router-dom";
 
-const Dashboard = () => {
+const StatCard = ({ icon: Icon, label, value, color }) => (
+  <motion.div
+    whileHover={{ y: -4 }}
+    className="relative overflow-hidden bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-sm"
+  >
+    <div className={`absolute top-0 right-0 w-24 h-24 blur-3xl opacity-10 rounded-full -mr-10 -mt-10 ${color}`} />
+    <div className="flex justify-between items-start mb-4">
+      <div className={`p-2 rounded-lg bg-white/5 border border-white/10 ${color.replace('bg-', 'text-')}`}>
+        <Icon size={20} />
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+        </div>
+        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+          Live Update
+        </div>
+      </div>
+    </div>
+    <div className="text-2xl font-bold text-white mb-1">{value}</div>
+    <div className="text-sm text-slate-400">{label}</div>
+  </motion.div>
+);
 
-  const stats = [
-    { label: 'ATS Score', value: '78%', color: 'from-cyan-400 to-blue-500' },
-    { label: 'Jobs Matched', value: '24', color: 'from-violet-400 to-purple-500' },
-    { label: 'Skills Done', value: '12', color: 'from-emerald-400 to-teal-500' },
-    { label: 'Ready %', value: '85%', color: 'from-orange-400 to-red-500' },
-  ];
+const ActivityItem = ({ title, time, type }) => (
+  <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
+    <div className={`w-2 h-2 rounded-full ${type === 'success' ? 'bg-emerald-500' : 'bg-blue-500'}`} />
+    <div className="flex-1">
+      <p className="text-xs font-medium text-slate-200">{title}</p>
+      <p className="text-[10px] text-slate-500">{time}</p>
+    </div>
+    <ArrowUpRight size={12} className="text-slate-600" />
+  </div>
+);
 
-  const jobs = [
-    { company: 'Neuralink', role: 'AI Interface Designer', match: 98 },
-    { company: 'Oracle', role: 'Systems Architect', match: 85 },
-    { company: 'Google', role: 'Full Stack Dev', match: 72 },
-  ];
+export default function CareerDashboard() {
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    axios.get("http://127.0.0.1:8000/me", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => setUser(res.data))
+      .catch(err => {
+        console.error(err);
+        if (err.response?.status === 401) navigate("/login");
+      });
+  }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-[#050b14] text-slate-200 font-sans overflow-hidden relative">
+    <div className="min-h-screen bg-[#050b14] text-slate-200 flex font-sans selection:bg-blue-500/30">
+      <Sidebar />
 
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-violet-600/10 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-600/10 rounded-full blur-[120px]" />
+      <main
+        style={{ marginLeft: "var(--sidebar-width)" }}
+        className="flex-1 flex flex-col relative overflow-hidden"
+      >
+        <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="flex h-screen relative z-10">
-
-        <Sidebar />
-
-        <main className="flex-1 overflow-y-auto custom-scrollbar">
-
-          <Header />
-
-          <div className="p-8 space-y-8 max-w-7xl mx-auto">
-
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h2 className="text-4xl font-bold text-white">
-                Welcome back, Aayush
-              </h2>
-              <p className="text-slate-400 mt-2 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-cyan-400" />
-                Your AI Career Copilot is ready.
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {stats.map((stat, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="p-6 rounded-2xl bg-white/5 border border-white/10"
-                >
-                  <p className="text-slate-400 text-sm">{stat.label}</p>
-                  <h3 className="text-3xl font-bold text-white">{stat.value}</h3>
-                </motion.div>
-              ))}
+        <div className="flex-1 overflow-y-auto p-8 max-w-7xl mx-auto w-full relative z-10">
+          
+          <section className="mb-10 flex justify-between items-end">
+            <div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-3 mb-2"
+              >
+                <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                  <Sparkles className="text-blue-400" size={20} />
+                </div>
+                <h1 className="text-3xl font-bold text-white tracking-tight">
+                  Welcome back, {user ? user.name : "Explorer"}
+                </h1>
+              </motion.div>
+              <p className="text-slate-400 text-sm">Real-time career insights and trajectory tracking.</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleLogout}
+              className="group flex items-center gap-3 pl-3 pr-4 py-2 bg-white/[0.03] hover:bg-red-500/10 border border-white/10 hover:border-red-500/30 rounded-xl transition-all duration-300 backdrop-blur-md"
+            >
+              <div className="w-8 h-8 rounded-lg bg-white/5 group-hover:bg-red-500/20 flex items-center justify-center transition-colors">
+                <LogOut size={16} className="text-slate-400 group-hover:text-red-400 transition-colors" />
+              </div>
+              <span className="text-sm font-semibold text-slate-300 group-hover:text-red-400 transition-colors">
+                Sign Out
+              </span>
+            </motion.button>
+          </section>
 
-              <div className="lg:col-span-2 space-y-8">
+          <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+            <StatCard icon={TrendingUp} label="Market Readiness" value="High" color="bg-blue-500" />
+            <StatCard icon={Briefcase} label="Active Applications" value="08" color="bg-purple-500" />
+            <StatCard icon={Zap} label="Learning Streak" value="14 Days" color="bg-emerald-500" />
+            <StatCard icon={Clock} label="Avg. Response Time" value="2.4d" color="bg-amber-500" />
+          </section>
 
-                <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
-                  <h3 className="text-xl font-bold mb-4">Resume Analysis</h3>
-
-                  <div className="flex flex-wrap gap-2">
-                    {['Kubernetes', 'Cloud', 'System Design'].map(tag => (
-                      <span key={tag} className="text-red-400 text-xs">
-                        <AlertCircle className="inline w-3 h-3" /> {tag}
-                      </span>
-                    ))}
+          <div className="grid lg:grid-cols-12 gap-8">
+            
+            <div className="lg:col-span-4 flex flex-col gap-8">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
+                <h3 className="text-sm font-semibold text-white mb-6 flex items-center justify-between">
+                  Next Milestone
+                  <Cpu size={14} className="text-blue-400" />
+                </h3>
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex justify-between items-end mb-2">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">AWS Cloud Practitioner</span>
+                      <span className="text-sm font-bold text-blue-400">65%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: '65%' }}
+                        transition={{ duration: 1.5 }}
+                        className="h-full bg-blue-500 rounded-full"
+                      />
+                    </div>
                   </div>
+                  <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Complete <span className="text-blue-400 font-medium">EC2 Fundamentals</span> to reach 80% readiness.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-                  <p className="text-emerald-400 mt-4 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Add “Scalability” to improve score
-                  </p>
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                <h3 className="text-sm font-semibold text-white mb-4">Recent Activity</h3>
+                <div className="space-y-1">
+                  <ActivityItem title="Applied to Vercel" time="2 hours ago" type="default" />
+                  <ActivityItem title="Python Quiz Passed" time="5 hours ago" type="success" />
+                  <ActivityItem title="Profile viewed by Meta" time="Yesterday" type="default" />
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-4">
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 flex flex-col relative overflow-hidden group h-full">
+                <div className="absolute inset-0 bg-emerald-600/[0.02] group-hover:bg-emerald-600/[0.05] transition-colors" />
+                
+                <div className="flex justify-between items-start mb-8">
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-1">Skill Breakdown</h3>
+                    <p className="text-xs text-slate-500 uppercase tracking-tighter font-bold">Current Proficiency</p>
+                  </div>
+                  <div className="relative w-12 h-12">
+                    <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse" />
+                    <div className="relative w-full h-full rounded-full border border-emerald-500/30 flex items-center justify-center bg-[#0a121e]">
+                       <CheckCircle2 size={20} className="text-emerald-400" />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
-                  <h3 className="text-xl font-bold mb-4">Recommended Jobs</h3>
-
-                  {jobs.map((job, i) => (
-                    <div key={i} className="flex justify-between py-3 border-b border-white/10">
-                      <div>
-                        <p className="text-white font-semibold">{job.role}</p>
-                        <p className="text-sm text-slate-500">{job.company}</p>
+                <div className="w-full space-y-5 flex-1">
+                  {[
+                    { name: 'React/Next.js', level: 90, color: 'from-blue-600 to-blue-400' },
+                    { name: 'TypeScript', level: 75, color: 'from-indigo-600 to-indigo-400' },
+                    { name: 'Node.js', level: 60, color: 'from-emerald-600 to-emerald-400' },
+                    { name: 'System Design', level: 45, color: 'from-purple-600 to-purple-400' },
+                  ].map((skill) => (
+                    <div key={skill.name}>
+                      <div className="flex justify-between items-end mb-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{skill.name}</span>
+                        <span className="text-xs font-black text-white">{skill.level}%</span>
                       </div>
-                      <div className="text-cyan-400">{job.match}%</div>
+                      <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${skill.level}%` }}
+                          transition={{ duration: 1, ease: "easeOut" }}
+                          className={`h-full bg-gradient-to-r ${skill.color} rounded-full`}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
 
-              <div className="space-y-6">
-
-                <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
-                  <h3 className="text-cyan-400 font-bold mb-3">Career Copilot</h3>
-                  <p className="text-sm text-slate-400">
-                    Ask anything about your career path.
-                  </p>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
-                  <h3 className="font-bold flex items-center gap-2">
-                    Next Milestone <TrendingUp className="w-4 h-4 text-emerald-400" />
-                  </h3>
-                  <p className="text-sm mt-3">AWS Certification</p>
-                </div>
-
+                <button className="mt-8 w-full py-4 bg-white text-[#050b14] hover:bg-emerald-400 transition-colors rounded-2xl font-bold text-sm shadow-xl shadow-emerald-500/10">
+                  View Full Roadmap
+                </button>
               </div>
             </div>
+
+            <div className="lg:col-span-4 flex flex-col gap-8">
+              <div className="bg-gradient-to-br from-blue-600/20 via-blue-600/5 to-transparent border border-blue-500/20 rounded-2xl p-6 backdrop-blur-md">
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="p-1.5 bg-blue-500 rounded-lg shadow-lg shadow-blue-500/20">
+                    <Sparkles size={16} className="text-white" />
+                  </div>
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">AI Copilot</h3>
+                </div>
+                <div className="space-y-3">
+                  <button className="w-full text-left p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all text-xs text-slate-300">
+                    Optimize my resume for Stripe
+                  </button>
+                  <button className="w-full text-left p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all text-xs text-slate-300">
+                    What skills am I missing for Lead roles?
+                  </button>
+                  <div className="pt-2 relative">
+                    <input
+                      type="text"
+                      placeholder="Ask your career agent..."
+                      className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 px-4 text-xs focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-600"
+                    />
+                    <ArrowUpRight size={14} className="absolute right-3 top-[28px] text-slate-500" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
+                <div>
+                   <div className="text-2xl font-bold text-white mb-1">28</div>
+                   <div className="text-xs text-slate-400 font-medium uppercase tracking-wider">Verified Skills</div>
+                </div>
+                <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                  <CheckCircle2 size={24} className="text-emerald-400" />
+                </div>
+              </div>
+              
+              <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                <div className="flex gap-3">
+                  <AlertCircle size={18} className="text-amber-400 shrink-0" />
+                  <p className="text-[11px] text-amber-200/80 leading-relaxed">
+                    <span className="font-bold text-amber-400">Market Insight:</span> Go and Rust are trending for your current job matches. Consider adding them to your roadmap.
+                  </p>
+                </div>
+              </div>
+            </div>
+
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
-};
-
-export default Dashboard;
+}

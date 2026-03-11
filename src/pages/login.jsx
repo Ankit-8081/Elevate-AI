@@ -20,10 +20,25 @@ const Icons = {
     </svg>
   ),
   Linkedin: () => (
-    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5z" />
-    </svg>
-  ),
+  <svg
+    className="w-5 h-5 text-cyan-400"
+    fill="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path d="M19 0h-14C2.239 0 0 2.239 0 5v14c0 2.761 
+    2.239 5 5 5h14c2.761 0 5-2.239 
+    5-5V5c0-2.761-2.239-5-5-5zM7.12 
+    20.452H3.56V9h3.56v11.452zM5.34 
+    7.433a2.065 2.065 0 1 
+    1 0-4.13 2.065 2.065 0 0 
+    1 0 4.13zM20.452 
+    20.452h-3.56v-5.569c0-1.329-.026-3.04-1.852-3.04-1.853 
+    0-2.137 1.446-2.137 
+    2.945v5.664h-3.56V9h3.417v1.561h.049c.476-.9 
+    1.637-1.852 3.368-1.852 3.6 0 4.263 
+    2.368 4.263 5.451v6.292z" />
+  </svg>
+),
   Eye: () => (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -105,19 +120,28 @@ function Login() {
     if(errors[e.target.name]) setErrors({...errors,[e.target.name]:null});
   };
 
-  const validate = ()=>{
-    let err={};
+  const validate = () => {
+  let err = {};
 
-    if(!form.email) err.email="EMAIL_REQUIRED";
-    if(!form.password) err.password="PASSWORD_REQUIRED";
+  if (!form.email) {
+    err.email = "EMAIL_REQUIRED";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    err.email = "INVALID_EMAIL_FORMAT";
+  }
 
-    if(isSignup){
-      if(!form.name) err.name="NAME_REQUIRED";
-      if(!form.linkedin) err.linkedin="LINKEDIN_REQUIRED";
-    }
+  if (!form.password) {
+    err.password = "PASSWORD_REQUIRED";
+  } else if (form.password.length < 8) {
+    err.password = "PASSWORD_MIN_8_CHARACTERS";
+  }
 
-    return err;
-  };
+  if (isSignup) {
+    if (!form.name) err.name = "NAME_REQUIRED";
+    if (!form.linkedin) err.linkedin = "LINKEDIN_REQUIRED";
+  }
+
+  return err;
+};
 
   const handleSubmit = async (e)=>{
 
@@ -266,7 +290,7 @@ function Login() {
             <InputField 
               icon={Icons.Mail} 
               name="email" 
-              placeholder="ID (use 1000)" 
+              placeholder="Email address"
               value={form.email} 
               onChange={handleChange} 
               error={errors.email} 
@@ -276,7 +300,7 @@ function Login() {
               icon={Icons.Lock} 
               type={showPassword ? "text" : "password"} 
               name="password" 
-              placeholder="Password (use 3000)" 
+              placeholder="Password (min 8 characters)"
               value={form.password} 
               onChange={handleChange} 
               error={errors.password}
