@@ -57,7 +57,7 @@ const SkillRoadmap = () => {
   const [loading, setLoading] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
-  const [role, setRole] = useState("AI Engineer");
+  const [role, setRole] = useState("");
   const [roadmapData, setRoadmapData] = useState([]);
   const [user, setUser] = useState(null);
   const roadmapRef = useRef(null);
@@ -105,6 +105,12 @@ const SkillRoadmap = () => {
   };
 
   const handleGenerate = () => {
+  if (!role.trim()) {
+    alert("Please enter a target role");
+    return;
+  }
+
+  setLoading(true);
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
@@ -126,10 +132,12 @@ const SkillRoadmap = () => {
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`${role.replace(/\s+/g, '_')}_Roadmap.pdf`);
+    const fileRole = role ? role.replace(/\s+/g, "_") : "Career";
+pdf.save(`${fileRole}_Roadmap.pdf`);
   };
 
-  const requiredSkills = ROLE_SKILLS[role] || [];
+  const normalizedRole = role.trim();
+const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
   const skillGaps = user?.skills
     ? requiredSkills.filter(skill => !user.skills.includes(skill))
     : [];
@@ -166,16 +174,13 @@ const SkillRoadmap = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Target Role</label>
-                <select 
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                >
-                  <option>AI Engineer</option>
-                  <option>Backend Developer</option>
-                  <option>Data Scientist</option>
-                  <option>DevOps Engineer</option>
-                </select>
+               <input
+  type="text"
+  placeholder="Enter your target role"
+  value={role}
+  onChange={(e) => setRole(e.target.value)}
+  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+/>
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Experience</label>
@@ -188,9 +193,11 @@ const SkillRoadmap = () => {
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Domain Focus</label>
                 <select className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                  <option>Generative AI</option>
-                  <option>Web Systems</option>
-                  <option>Cloud Infrastructure</option>
+                <option>Project Based</option>
+                <option>Theory First</option>
+                <option>Balanced</option>
+                <option>Fast Track</option>
+                <option>Deep Dive</option>
                 </select>
               </div>
               <button
