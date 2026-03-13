@@ -5,3 +5,8 @@ langchain_core
 langchain_groq
 langchain_community
 langgraph
+apify_client
+urllib
+langchain-google-genai
+pdf2image
+langchain_tavily
