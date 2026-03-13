@@ -204,6 +204,7 @@ Backend/__pycache__
 Backend/venv
 Backend/uploads/*
 Backend/users.db
+Backend/profile_images/*
 
 # Ruff stuff:
 .ruff_cache/
