@@ -31,35 +31,32 @@ const SectionHeader = ({ icon: Icon, title }) => (
   </div>
 );
 
-const EditableInput = ({ label, value, setValue, icon: Icon, type = "text" }) => {
+const EditableInput = ({ label, value, setValue, icon: Icon, type = "text", disabled = false }) => {
   const [isEditing, setIsEditing] = useState(false);
 
   return (
     <div className="group relative mb-4">
       <label className="text-xs font-medium text-gray-400 mb-1.5 block ml-1">{label}</label>
-
       <div className="relative flex items-center">
-
         <div className="absolute left-3 text-gray-500">
           <Icon size={16} />
         </div>
-
         <input
-          disabled={!isEditing}
+          disabled={!isEditing || disabled}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           type={type}
           className={`w-full bg-black/20 border ${isEditing ? 'border-blue-500/50' : 'border-white/5'
-            } rounded-xl py-2.5 pl-10 pr-12 text-gray-200`}
+            } rounded-xl py-2.5 pl-10 pr-12 text-gray-200 disabled:opacity-50`}
         />
-
-        <button
-          onClick={() => setIsEditing(!isEditing)}
-          className="absolute right-2 p-1.5 hover:bg-white/10 rounded-lg"
-        >
-          {isEditing ? <Check size={16} /> : <Edit2 size={14} />}
-        </button>
-
+        {!disabled && (
+          <button
+            onClick={() => setIsEditing(!isEditing)}
+            className="absolute right-2 p-1.5 hover:bg-white/10 rounded-lg text-gray-400"
+          >
+            {isEditing ? <Check size={16} className="text-green-400" /> : <Edit2 size={14} />}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -67,12 +64,11 @@ const EditableInput = ({ label, value, setValue, icon: Icon, type = "text" }) =>
 
 const StatsPanel = () => {
   const stats = [
-    { label: 'Courses Done', value: '24', borderColor: 'border-l-amber-500', shadow: 'shadow-amber-500/10' },
-    { label: 'Learning Streak', value: '48', borderColor: 'border-l-purple-500', shadow: 'shadow-purple-500/10' },
-    { label: 'Networks', value: '06', borderColor: 'border-l-emerald-500', shadow: 'shadow-emerald-500/10' },
-    { label: 'Profile Views', value: '1.2k', borderColor: 'border-l-pink-500', shadow: 'shadow-pink-500/10' },
+    { label: 'Projects Built', value: '07', borderColor: 'border-l-amber-500', shadow: 'shadow-amber-500/10' },
+    { label: 'Modules Completed', value: '21', borderColor: 'border-l-purple-500', shadow: 'shadow-purple-500/10' },
+    { label: 'Skills Mastered', value: '18', borderColor: 'border-l-emerald-500', shadow: 'shadow-emerald-500/10' },
+    { label: 'Certifications', value: '03', borderColor: 'border-l-pink-500', shadow: 'shadow-pink-500/10' },
   ];
-
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
       {stats.map((stat, i) => (
@@ -90,15 +86,7 @@ const StatsPanel = () => {
   );
 };
 
-
-
-
-const DynamicProfessionalLinks = () => {
-  const [links, setLinks] = useState([
-    { id: 1, platform: 'LinkedIn', url: 'linkedin.com/in/user' },
-    { id: 2, platform: 'Portfolio', url: 'my-work.com' }
-  ]);
-
+const ProfessionalLinks = ({ links, setLinks }) => {
   const addLink = () => {
     setLinks([...links, { id: Date.now(), platform: '', url: '' }]);
   };
@@ -137,7 +125,7 @@ const DynamicProfessionalLinks = () => {
                 <input
                   value={link.platform}
                   onChange={(e) => updateLink(link.id, 'platform', e.target.value)}
-                  placeholder="Platform (e.g. Behance, Github)"
+                  placeholder="Platform (e.g. LinkedIn, Github)"
                   className="bg-transparent text-[10px] font-bold text-blue-400 uppercase tracking-widest focus:outline-none w-full"
                 />
                 <button
@@ -156,6 +144,9 @@ const DynamicProfessionalLinks = () => {
             </motion.div>
           ))}
         </AnimatePresence>
+        {links.length === 0 && (
+          <p className="text-center text-xs text-gray-500 py-4">No links added yet.</p>
+        )}
       </div>
     </GlassCard>
   );
@@ -168,9 +159,11 @@ const ProfilePage = () => {
   const [user, setUser] = useState(null);
   const [image, setImage] = useState(null);
   const [coverImage, setCoverImage] = useState(null);
+  const [resume, setResume] = useState(null);
 
   const profileInputRef = useRef(null);
   const coverInputRef = useRef(null);
+  const resumeInputRef = useRef(null);
 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -180,109 +173,74 @@ const ProfilePage = () => {
   const [target_role, setTargetRole] = useState("");
   const [links, setLinks] = useState([]);
 
+  const API_BASE = "http://127.0.0.1:8000";
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    axios.get(`${API_BASE}/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        const data = res.data;
+        setUser(data);
+        setName(data.name || "");
+        setUsername(data.username || "");
+        setPhone(data.phone || "");
+        setBio(data.bio || "");
+        setCurrentRole(data.current_role || "");
+        setTargetRole(data.target_role || "");
+        setLinks(Array.isArray(data.professional_links) ? data.professional_links : []);
+        setImage(data.profile_image || null);
+        setCoverImage(data.cover_image || null);
+        setResume(data.resume || null);
+      })
+      .catch(err => console.error("Error fetching user:", err));
+  }, []);
+
   const saveProfile = async () => {
     const token = localStorage.getItem("token");
-
     try {
       await axios.post(
-        "http://127.0.0.1:8000/profile/update",
-        {
-          name,
-          username,
-          phone,
-          bio,
-          current_role,
-          target_role,
-          professional_links: links
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        `${API_BASE}/profile/update`,
+        { name, username, phone, bio, current_role, target_role, professional_links: links },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
       alert("Profile saved successfully 🚀");
-
     } catch (err) {
       console.error(err);
       alert("Failed to save profile");
     }
   };
 
-
-  useEffect(() => {
+  const uploadFile = async (file, endpoint, setter) => {
     const token = localStorage.getItem("token");
-    if (!token) return;
-
-    axios.get("http://127.0.0.1:8000/me", {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => {
-        setUser(res.data);
-
-        setName(res.data.name || "");
-        setUsername(res.data.username || "");
-        setPhone(res.data.phone || "");
-        setBio(res.data.bio || "");
-        setCurrentRole(res.data.current_role || "");
-        setTargetRole(res.data.target_role || "");
-        setLinks(res.data.professional_links || []);
-
-        setImage(res.data.profile_image || null);
-        setCoverImage(res.data.cover_image || null);
-      })
-      .catch(err => console.log(err));
-  }, []);
-
-  const uploadProfile = async (file) => {
-    const token = localStorage.getItem("token");
-
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await axios.post(
-      "http://127.0.0.1:8000/profile/upload-image",
-      formData,
-      {
+    try {
+      const res = await axios.post(`${API_BASE}${endpoint}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data"
         }
-      }
-    );
-
-    setImage(res.data.profile_image);
+      });
+      // Extract the key from response (e.g., res.data.resume or res.data.profile_image)
+      const dataKey = Object.keys(res.data)[0];
+      setter(res.data[dataKey]);
+    } catch (err) {
+      console.error(`Upload to ${endpoint} failed`, err);
+    }
   };
 
-  const uploadCover = async (file) => {
-    const token = localStorage.getItem("token")
-
-    const formData = new FormData()
-    formData.append("file", file)
-
-    const res = await axios.post(
-  "http://127.0.0.1:8000/profile/upload-cover",
-  formData,
-  { headers: { Authorization: `Bearer ${token}` } }
-)
-
-setCoverImage(res.data.cover_image)
-  }
-
-  const handleImageChange = (e, type) => {
+  const handleFileChange = (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const url = URL.createObjectURL(file);
-
-    if (type === "profile") {
-      setImage(url);
-      uploadProfile(file);
-    }
-
-    if (type === "cover") {
-      setCoverImage(url);
-      uploadCover(file);
-    }
+    if (type === "profile") uploadFile(file, "/profile/upload-image", setImage);
+    if (type === "cover") uploadFile(file, "/profile/upload-cover", setCoverImage);
+    if (type === "resume") uploadFile(file, "/profile/upload-resume", setResume);
   };
 
   return (
@@ -294,48 +252,39 @@ setCoverImage(res.data.cover_image)
 
           {/* Profile Header Section */}
           <div className="relative mb-8">
-            {/* Cover Image Container */}
             <div className="group relative h-48 w-full rounded-3xl border border-white/10 overflow-hidden bg-gradient-to-r from-blue-900/40 via-purple-900/40 to-black">
               {coverImage && (
-  <img
-    src={`http://127.0.0.1:8000${coverImage}`}
-    alt="Cover"
-    className="w-full h-full object-cover"
-  />
-)}
-
-              {/* Cover Image Upload Button */}
+                <img src={`${API_BASE}${coverImage}`} alt="Cover" className="w-full h-full object-cover" />
+              )}
               <button
                 onClick={() => coverInputRef.current?.click()}
                 className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-lg text-xs font-medium text-white opacity-0 group-hover:opacity-100 transition-all border border-white/10"
               >
-                <Camera size={14} />
-                Change Cover
+                <Camera size={14} /> Change Cover
               </button>
-              <input ref={coverInputRef} type="file" className="hidden" onChange={(e) => handleImageChange(e, 'cover')} accept="image/*" />
+              <input ref={coverInputRef} type="file" className="hidden" onChange={(e) => handleFileChange(e, 'cover')} accept="image/*" />
             </div>
 
-            {/* Profile Avatar & Info Overlay */}
             <div className="absolute -bottom-16 left-8 flex items-end gap-6">
               <div className="relative group">
                 <div className="w-32 h-32 rounded-3xl overflow-hidden border-4 border-[#050b14] shadow-2xl bg-gray-800 flex items-center justify-center">
                   {image ? (
-  <img src={`http://127.0.0.1:8000${image}`} className="w-full h-full object-cover" />
-) : (
-  <User size={48} className="text-gray-500" />
-)}
+                    <img src={`${API_BASE}${image}`} className="w-full h-full object-cover" alt="Profile" />
+                  ) : (
+                    <User size={48} className="text-gray-500" />
+                  )}
                 </div>
                 <button onClick={() => profileInputRef.current?.click()} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-3xl">
                   <Camera className="text-white" />
                 </button>
-                <input ref={profileInputRef} type="file" className="hidden" onChange={(e) => handleImageChange(e, 'profile')} accept="image/*" />
+                <input ref={profileInputRef} type="file" className="hidden" onChange={(e) => handleFileChange(e, 'profile')} accept="image/*" />
               </div>
 
               <div className="mb-4">
-                <h1 className="text-3xl font-bold text-white mb-2">{user?.name || "Alex Rivest"}</h1>
+                <h1 className="text-3xl font-bold text-white mb-2">{user?.name || "User Name"}</h1>
                 <div className="inline-flex flex-col gap-2 p-4 rounded-2xl bg-[#0f172a] border border-blue-500/40 shadow-xl">
                   <p className="text-blue-400 font-bold text-sm flex items-center gap-2">
-                    <Code size={14} /> {user?.role || "Senior Professional"}
+                    <Code size={14} /> {current_role || "Professional"}
                   </p>
                   <div className="flex gap-3 text-[11px] font-bold tracking-wide uppercase">
                     <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-500/10 text-green-400 border border-green-500/20">
@@ -354,32 +303,17 @@ setCoverImage(res.data.cover_image)
               <GlassCard>
                 <SectionHeader icon={User} title="Personal Information" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
-                  <EditableInput
-                    label="Full Name"
-                    value={name}
-                    setValue={setName}
-                    icon={User}
-                  />
-                  <EditableInput
-                    label="Username"
-                    value={username}
-                    setValue={setUsername}
-                    icon={User}
-                  />
-                  <EditableInput label="Email Address" value={user?.email} icon={Mail} type="email" />
-                  <EditableInput
-                    label="Phone Number"
-                    value={phone}
-                    setValue={setPhone}
-                    icon={Phone}
-                  />
+                  <EditableInput label="Full Name" value={name} setValue={setName} icon={User} />
+                  <EditableInput label="Username" value={username} setValue={setUsername} icon={User} />
+                  <EditableInput label="Email Address" value={user?.email || ""} icon={Mail} type="email" disabled={true} />
+                  <EditableInput label="Phone Number" value={phone} setValue={setPhone} icon={Phone} />
                 </div>
                 <div className="mt-2">
                   <label className="text-xs font-medium text-gray-400 mb-1.5 block ml-1">Bio / About Me</label>
                   <textarea
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    className="w-full bg-black/20 border border-white/5 rounded-xl p-3 text-gray-200"
+                    className="w-full bg-black/20 border border-white/5 rounded-xl p-3 text-gray-200 min-h-[100px] focus:border-blue-500/40 outline-none transition-colors"
                   />
                 </div>
               </GlassCard>
@@ -387,18 +321,25 @@ setCoverImage(res.data.cover_image)
               <GlassCard>
                 <SectionHeader icon={Briefcase} title="Career Profile" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 mb-6">
-                  <EditableInput label="Current Role" value="Senior Specialist" icon={Briefcase} />
-                  <EditableInput label="Target Role" value="Lead Director" icon={Target} />
+                  <EditableInput label="Current Role" value={current_role} setValue={setCurrentRole} icon={Briefcase} />
+                  <EditableInput label="Target Role" value={target_role} setValue={setTargetRole} icon={Target} />
                 </div>
-                <div className="p-6 border-2 border-dashed border-white/10 rounded-2xl hover:border-blue-500/30 transition-colors group cursor-pointer text-center">
+                <div
+                  onClick={() => resumeInputRef.current?.click()}
+                  className="p-6 border-2 border-dashed border-white/10 rounded-2xl hover:border-blue-500/30 transition-colors group cursor-pointer text-center"
+                >
                   <UploadCloud className="w-8 h-8 mx-auto text-gray-500 group-hover:text-blue-400 mb-2 transition-colors" />
-                  <p className="text-sm text-gray-400">Upload your latest Resume/Portfolio <span className="text-blue-400">browse</span></p>
+                  <p className="text-sm text-gray-400">
+                    {resume ? `Uploaded: ${resume.split('/').pop()}` : "Upload your latest Resume"}
+                  </p>
+                  <span className="text-blue-400 text-sm">Browse File</span>
+                  <input ref={resumeInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx" onChange={(e) => handleFileChange(e, 'resume')} />
                 </div>
               </GlassCard>
             </div>
 
             <div className="lg:col-span-4 space-y-6">
-              <DynamicProfessionalLinks />
+              <ProfessionalLinks links={links} setLinks={setLinks} />
 
               <GlassCard>
                 <SectionHeader icon={Shield} title="Security & Settings" />
@@ -418,12 +359,15 @@ setCoverImage(res.data.cover_image)
           </div>
         </div>
       </main>
-      <button
-        onClick={saveProfile}
-        className="mt-6 w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-semibold"
-      >
-        Save Profile
-      </button>
+
+      <div className="fixed bottom-8 right-8 z-50">
+        <button
+          onClick={saveProfile}
+          className="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-bold shadow-2xl shadow-blue-500/20 transform hover:scale-105 transition-all active:scale-95"
+        >
+          Save Changes
+        </button>
+      </div>
 
       <style>{`
         ::-webkit-scrollbar { width: 8px; }
