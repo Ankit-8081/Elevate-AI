@@ -58,28 +58,34 @@ export default function ResumeDashboard() {
 
   const onUpload = async () => {
     if (!file) return;
+
     setAnalyzing(true);
 
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('target_job', targetJob);
+    formData.append("file", file);
+    formData.append("target_job", targetJob);
+
+    const token = localStorage.getItem("token");
 
     try {
-      const res = await axios.post('http://localhost:8000/upload-resume', formData);
+      const res = await axios.post(
+        "http://localhost:8000/upload-resume",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data"
+          }
+        }
+      );
+
       setData(res.data);
+
     } catch (err) {
-      setTimeout(() => {
-        setData({
-          ats_score: 84,
-          strengths: ["Quantified achievements with metrics", "Strong React/Node.js stack", "Professional layout density"],
-          weaknesses: ["Missing Cloud Infrastructure details", "Vague leadership bullet points", "No GitHub portfolio link"],
-          missing_keywords: ["Docker", "Kubernetes", "CI/CD", "Redis", "Unit Testing", "Terraform", "GraphQL"],
-          suggestions: ["Quantify your role: change 'managed team' to 'led a team of 12 to deploy 4 microservices'"]
-        });
-      }, 2500);
-    } finally {
-      setAnalyzing(false);
+      console.error("Resume analysis error:", err);
     }
+
+    setAnalyzing(false);
   };
 
   return (

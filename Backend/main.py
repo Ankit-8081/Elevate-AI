@@ -11,12 +11,15 @@ import shutil
 import uuid
 import os
 import whisper
+import json
+
 
 import base64
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 from dotenv import load_dotenv
 from pydantic import Field
+from fastapi import Form
 
 from interview_ai import generate_question, evaluate_answer
 from models import InterviewStart, InterviewAnswer
@@ -38,9 +41,8 @@ class MarketReadiness(BaseModel):
     critical_gaps: List[str] = Field(description="Major missing qualifications")
     missing_keywords: List[str] = Field(description="Missing ATS keywords")
     ai_suggestion: str = Field(description="Strategic advice")
-    market_readiness: str = Field(
-        description="Overall readiness for the target role. Must be one of: High, Medium, Low."
-    )
+    market_readiness: str = Field(description="High, Medium, or Low readiness")
+    skills: List[str] = Field(description="List of technical skills extracted from the resume")
     
 
 structured_llm = llm.with_structured_output(MarketReadiness)
@@ -61,14 +63,17 @@ Return:
 - key strengths
 - critical gaps
 - missing keywords
+- extracted technical skills
 - a short improvement suggestion
 
-Also determine the candidate's **market readiness for this role** based on current skills and experience.
+Also determine the candidate's market readiness.
 
-Market readiness must be classified as one of:
-High → strong match, likely ready for interviews
-Medium → somewhat aligned but needs improvement
-Low → major gaps for this role
+Market readiness must be:
+High → strong match
+Medium → partially aligned
+Low → major skill gaps
+
+Extract **5–10 core technical skills from the resume**.
 """},
             {
                 "type": "media",
@@ -102,10 +107,11 @@ CREATE TABLE IF NOT EXISTS users (
     name TEXT,
     linkedin TEXT,
     email TEXT UNIQUE,
-    password TEXT
+    password TEXT,
+    market_readiness TEXT,
+    skills TEXT
 )
 """)
-
 conn.commit()
 
 # ---------------- AUTH CONFIG ---------------- #
@@ -243,22 +249,26 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     email = verify_token(token)
 
     cursor.execute(
-        "SELECT name, linkedin, email FROM users WHERE email = ?",
-        (email,)
-    )
+    "SELECT name, linkedin, email, market_readiness, skills FROM users WHERE email = ?",
+    (email,)
+)
 
     user = cursor.fetchone()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    name, linkedin, email = user
-
+    
+    name, linkedin, email, readiness, skills = user
+    skills = json.loads(skills) if skills else []
     return {
         "name": name,
         "linkedin": linkedin,
-        "email": email
+        "email": email,
+        "market_readiness": readiness,
+        "skills": skills
     }
+
 
 
 # ---------------- FILE UPLOAD ---------------- #
@@ -267,43 +277,62 @@ UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-from fastapi import Form
+
 @app.post("/upload-resume")
 async def upload_resume(
     file: UploadFile = File(...),
-    target_job: str = Form(...)
+    target_job: str = Form(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
-
     try:
-        # Ensure uploads folder exists
+        # verify user
+        token = credentials.credentials
+        email = verify_token(token)
+
+        # ensure uploads folder exists
         upload_dir = "uploads"
         os.makedirs(upload_dir, exist_ok=True)
 
-        # Create unique filename
+        # create unique filename
         file_ext = file.filename.split(".")[-1]
         unique_name = f"{uuid.uuid4()}.{file_ext}"
         file_path = os.path.join(upload_dir, unique_name)
 
-        # Read file
+        # read uploaded file
         contents = await file.read()
 
-        # Save file to uploads folder
+        # save file
         with open(file_path, "wb") as f:
             f.write(contents)
 
-        # Run AI analysis
+        # run AI resume analysis
         report = await analyze_resume(contents, target_job)
 
+        report = await analyze_resume(contents, target_job)
+
+        cursor.execute(
+            "UPDATE users SET market_readiness = ?, skills = ? WHERE email = ?",
+            (report["market_readiness"], json.dumps(report["skills"]), email)
+        )
+        conn.commit()
+
+        # update user's market readiness
+        cursor.execute(
+            "UPDATE users SET market_readiness = ? WHERE email = ?",
+            (report["market_readiness"], email)
+        )
+        conn.commit()
+
         return {
-    "filename": unique_name,
-    "file_path": file_path,
-    "ats_score": 80,
-    "market_readiness": report["market_readiness"],
-    "strengths": report["key_strengths"],
-    "weaknesses": report["critical_gaps"],
-    "missing_keywords": report["missing_keywords"],
-    "suggestions": [report["ai_suggestion"]]
-}
+            "filename": unique_name,
+            "file_path": file_path,
+            "ats_score": 80,
+            "market_readiness": report["market_readiness"],
+            "strengths": report["key_strengths"],
+            "weaknesses": report["critical_gaps"],
+            "missing_keywords": report["missing_keywords"],
+            "suggestions": [report["ai_suggestion"]]
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -393,17 +422,6 @@ def start_interview(data: InterviewStart):
         "question": question
     }
 
-@app.post("/interview/start")
-def start_interview(data: InterviewStart):
-
-    question = generate_question(
-        role=data.role,
-        difficulty=data.difficulty
-    )
-
-    return {
-        "question": question
-    }
 
 @app.post("/interview/submit")
 def submit_answer(data: InterviewAnswer):

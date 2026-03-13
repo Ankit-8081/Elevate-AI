@@ -82,7 +82,7 @@ export default function CareerDashboard() {
         if (err.response?.status === 401) navigate("/login");
       });
   }, [navigate]);
-  
+
   const askAI = async () => {
     if (!prompt.trim()) return;
     const token = localStorage.getItem("token");
@@ -116,7 +116,7 @@ export default function CareerDashboard() {
         <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="flex-1 overflow-y-auto p-8 max-w-7xl mx-auto w-full relative z-10">
-          
+
           <section className="mb-10 flex justify-between items-end">
             <div>
               <motion.div
@@ -150,14 +150,19 @@ export default function CareerDashboard() {
           </section>
 
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-            <StatCard icon={TrendingUp} label="Market Readiness" value="High" color="bg-blue-500" />
+            <StatCard
+              icon={TrendingUp}
+              label="Market Readiness"
+              value={user?.market_readiness || "--"}
+              color="bg-blue-500"
+            />
             <StatCard icon={Briefcase} label="Active Applications" value="08" color="bg-purple-500" />
             <StatCard icon={Zap} label="Learning Streak" value="14 Days" color="bg-emerald-500" />
             <StatCard icon={Clock} label="Avg. Response Time" value="2.4d" color="bg-amber-500" />
           </section>
 
           <div className="grid lg:grid-cols-12 gap-8">
-            
+
             <div className="lg:col-span-4 flex flex-col gap-8">
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-sm font-semibold text-white mb-6 flex items-center justify-between">
@@ -205,23 +210,40 @@ export default function CareerDashboard() {
                   <div className="relative w-12 h-12">
                     <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse" />
                     <div className="relative w-full h-full rounded-full border border-emerald-500/30 flex items-center justify-center bg-[#0a121e]">
-                       <CheckCircle2 size={20} className="text-emerald-400" />
+                      <CheckCircle2 size={20} className="text-emerald-400" />
                     </div>
                   </div>
                 </div>
-
                 <div className="w-full space-y-4">
-                  {[
-                    { name: 'React/Next.js', color: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20' },
-                    { name: 'TypeScript', color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' },
-                    { name: 'Node.js', color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
-                    { name: 'System Design', color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20' },
-                  ].map((skill) => (
-                    <div key={skill.name} className={`flex justify-between items-center p-4 ${skill.bg} border ${skill.border} rounded-2xl backdrop-blur-sm transition-transform hover:scale-[1.02]`}>
-                      <span className="text-[11px] font-bold text-white uppercase tracking-wider">{skill.name}</span>
-                      <span className={`text-[10px] font-black uppercase tracking-tighter ${skill.color}`}>{skill.level}</span>
+
+                  {(!user?.skills || user.skills.length === 0) ? (
+
+                    <div className="text-center text-slate-400 text-sm py-8">
+                      Upload a resume to generate your skill breakdown
                     </div>
-                  ))}
+
+                  ) : (
+
+                    user.skills.map((skill, index) => (
+
+                      <div
+                        key={index}
+                        className="flex justify-between items-center p-4 bg-cyan-400/10 border border-cyan-400/20 rounded-2xl backdrop-blur-sm transition-transform hover:scale-[1.02]"
+                      >
+                        <span className="text-[11px] font-bold text-white uppercase tracking-wider">
+                          {skill}
+                        </span>
+
+                        <span className="text-[10px] font-black uppercase tracking-tighter text-cyan-400">
+                          detected
+                        </span>
+
+                      </div>
+
+                    ))
+
+                  )}
+
                 </div>
 
                 <button className="mt-8 w-full py-4 bg-white text-[#050b14] hover:bg-emerald-400 transition-colors rounded-2xl font-bold text-sm shadow-xl shadow-emerald-500/10">
@@ -239,13 +261,13 @@ export default function CareerDashboard() {
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider">AI Copilot</h3>
                 </div>
                 <div className="space-y-3">
-                  <button 
+                  <button
                     onClick={() => setPrompt("Optimize my resume for Stripe")}
                     className="w-full text-left p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all text-xs text-slate-300"
                   >
                     Optimize my resume for Stripe
                   </button>
-                  <button 
+                  <button
                     onClick={() => setPrompt("What skills am I missing for Lead roles?")}
                     className="w-full text-left p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all text-xs text-slate-300"
                   >
@@ -281,14 +303,18 @@ export default function CareerDashboard() {
 
               <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
                 <div>
-                   <div className="text-2xl font-bold text-white mb-1">28</div>
-                   <div className="text-xs text-slate-400 font-medium uppercase tracking-wider">Verified Skills</div>
+                  <div className="text-2xl font-bold text-white mb-1">
+                    {user?.skills ? user.skills.length : 0}
+                  </div>
+                  <div className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+                    {user?.skills?.length ? "Verified Skills" : "Upload Resume"}
+                  </div>
                 </div>
                 <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
                   <CheckCircle2 size={24} className="text-emerald-400" />
                 </div>
               </div>
-              
+
               <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
                 <div className="flex gap-3">
                   <AlertCircle size={18} className="text-amber-400 shrink-0" />
