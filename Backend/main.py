@@ -488,15 +488,32 @@ def search_jobs(data: JobSearchRequest):
 
         if "linkedin" in data.sources:
             linkedin = LinkedInScraper()
-            results += linkedin.fetch_jobs(data.query, data.location)
+            linkedin_jobs = linkedin.fetch_jobs(data.query, data.location)
+
+            if isinstance(linkedin_jobs, list):
+                for j in linkedin_jobs:
+                    j["source"] = "LinkedIn"
+                    results.append(j)
+
 
         if "naukri" in data.sources:
             naukri = NaukriScraper()
-            results += naukri.fetch_jobs(data.query, data.location)
+            naukri_jobs = naukri.fetch_jobs(data.query, data.location)
+
+            if isinstance(naukri_jobs, list):
+                for j in naukri_jobs:
+                    j["source"] = "Naukri"
+                    results.append(j)
+
 
         if "web" in data.sources:
             serp = SerpApiScraper()
-            results += serp.fetch_jobs(data.query, data.location)
+            web_jobs = serp.fetch_jobs(data.query, data.location)
+
+            if isinstance(web_jobs, list):
+                for j in web_jobs:
+                    j["source"] = "Web"
+                    results.append(j)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
