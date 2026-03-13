@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Map, Zap, Brain, CheckCircle2, Sparkles, TrendingUp, 
-  ChevronDown, BookOpen, Clock, Download, ExternalLink, Info 
+import {
+  Map, Zap, Brain, CheckCircle2, Sparkles, TrendingUp,
+  ChevronDown, BookOpen, Clock, Download, ExternalLink, Info
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -62,6 +62,8 @@ const SkillRoadmap = () => {
   const [user, setUser] = useState(null);
   const roadmapRef = useRef(null);
   const navigate = useNavigate();
+  const [experience, setExperience] = useState("Beginner");
+  const [learningStyle, setLearningStyle] = useState("Project Based");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -78,7 +80,7 @@ const SkillRoadmap = () => {
 
     const cachedRoadmap = localStorage.getItem('skill_roadmap_data');
     const cachedVisibility = localStorage.getItem('skill_roadmap_visible');
-    
+
     if (cachedRoadmap) {
       setRoadmapData(JSON.parse(cachedRoadmap));
     }
@@ -90,7 +92,7 @@ const SkillRoadmap = () => {
   const handleStatusChange = (stageId, skillName, newStatus) => {
     const newData = roadmapData.map(stage => {
       if (stage.id === stageId) {
-        const updatedSkills = stage.skills.map(skill => 
+        const updatedSkills = stage.skills.map(skill =>
           skill.name === skillName ? { ...skill, status: newStatus } : skill
         );
         const completed = updatedSkills.filter(s => s.status === "Completed").length;
@@ -104,21 +106,78 @@ const SkillRoadmap = () => {
     localStorage.setItem('skill_roadmap_data', JSON.stringify(newData));
   };
 
-  const handleGenerate = () => {
-  if (!role.trim()) {
-    alert("Please enter a target role");
-    return;
-  }
+  const handleGenerate = async () => {
 
-  setLoading(true);
+    if (!role.trim()) {
+      alert("Please enter a target role");
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      const res = await axios.post("http://127.0.0.1:8000/roadmap", {
+                    topic: role,
+                    experience_level: experience,
+                    learning_style: learningStyle,
+                    limit: 5
+                  });
+
+      const data = res.data;
+
+      const formatted = [
+        {
+          id: 1,
+          title: "Foundations",
+          duration: "4 Weeks",
+          progress: 0,
+          skills: data.basic.map(c => ({
+  name: c.title,
+  difficulty: c.toughness,
+  time: c.learning_time,
+  status: "Not Started",
+  url: c.learning_link
+}))
+        },
+        {
+          id: 2,
+          title: "Core Skills",
+          duration: "8 Weeks",
+          progress: 0,
+          skills: data.core.map(c => ({
+  name: c.title,
+  difficulty: c.toughness,
+  time: c.learning_time,
+  status: "Not Started",
+  url: c.learning_link
+}))
+        },
+        {
+          id: 3,
+          title: "Advanced Topics",
+          duration: "6 Weeks",
+          progress: 0,
+          skills: data.advanced.map(c => ({
+  name: c.title,
+  difficulty: c.toughness,
+  time: c.learning_time,
+  status: "Not Started",
+  url: c.learning_link
+}))
+        }
+      ];
+
+      setRoadmapData(formatted);
       setShowRoadmap(true);
-      setRoadmapData(INITIAL_DATA);
-      localStorage.setItem('skill_roadmap_data', JSON.stringify(INITIAL_DATA));
+
+      localStorage.setItem('skill_roadmap_data', JSON.stringify(formatted));
       localStorage.setItem('skill_roadmap_visible', 'true');
-    }, 1500);
+
+    } catch (err) {
+      console.error(err);
+    }
+
+    setLoading(false);
   };
 
   const downloadRoadmap = async () => {
@@ -132,12 +191,13 @@ const SkillRoadmap = () => {
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    localStorage.setItem("roadmap_role", role);
     const fileRole = role ? role.replace(/\s+/g, "_") : "Career";
-pdf.save(`${fileRole}_Roadmap.pdf`);
+    pdf.save(`${fileRole}_Roadmap.pdf`);
   };
 
   const normalizedRole = role.trim();
-const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
+  const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
   const skillGaps = user?.skills
     ? requiredSkills.filter(skill => !user.skills.includes(skill))
     : [];
@@ -159,9 +219,9 @@ const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
               </h1>
               <p className="text-slate-400 mt-2">AI-powered career mapping for the next generation of engineers.</p>
             </div>
-            
+
             {showRoadmap && (
-              <button 
+              <button
                 onClick={downloadRoadmap}
                 className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg border border-slate-700 transition-all text-sm font-semibold shadow-xl"
               >
@@ -174,17 +234,21 @@ const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Target Role</label>
-               <input
-  type="text"
-  placeholder="Enter your target role"
-  value={role}
-  onChange={(e) => setRole(e.target.value)}
-  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-/>
+                <input
+                  type="text"
+                  placeholder="Enter your target role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Experience</label>
-                <select className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                <select
+  value={experience}
+  onChange={(e) => setExperience(e.target.value)}
+  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+>
                   <option>Beginner</option>
                   <option>Intermediate</option>
                   <option>Advanced</option>
@@ -192,12 +256,16 @@ const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Domain Focus</label>
-                <select className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                <option>Project Based</option>
-                <option>Theory First</option>
-                <option>Balanced</option>
-                <option>Fast Track</option>
-                <option>Deep Dive</option>
+                <select
+  value={learningStyle}
+  onChange={(e) => setLearningStyle(e.target.value)}
+  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+>
+                  <option>Project Based</option>
+                  <option>Theory First</option>
+                  <option>Balanced</option>
+                  <option>Fast Track</option>
+                  <option>Deep Dive</option>
                 </select>
               </div>
               <button
@@ -219,11 +287,11 @@ const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
                     className="space-y-8"
                   >
                     {roadmapData.map((stage, index) => (
-                      <StageCard 
-                        key={stage.id} 
-                        stage={stage} 
-                        index={index} 
-                        onStatusChange={handleStatusChange} 
+                      <StageCard
+                        key={stage.id}
+                        stage={stage}
+                        index={index}
+                        onStatusChange={handleStatusChange}
                       />
                     ))}
                   </motion.div>
@@ -242,18 +310,18 @@ const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <Zap size={20} className="text-yellow-400" /> AI Insights
                   </h3>
-                  <button 
+                  <button
                     onClick={() => setShowInsights(!showInsights)}
                     className={`p-2 rounded-lg transition-all ${showInsights ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
                   >
                     <Info size={18} />
                   </button>
                 </div>
-                
+
                 <div className="space-y-4">
                   <AnimatePresence>
                     {showInsights && (
-                      <motion.div 
+                      <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
@@ -279,24 +347,24 @@ const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  
+
                   <div className="pt-4 border-t border-slate-800">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium text-slate-400">Total Completion</span>
                       <span className="text-sm font-bold text-blue-400">{showRoadmap ? globalProgress : (user?.skills ? Math.min(100, user.skills.length * 10) : 0)}%</span>
                     </div>
                     <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                      <motion.div 
+                      <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${showRoadmap ? globalProgress : (user?.skills ? Math.min(100, user.skills.length * 10) : 0)}%` }}
-                        className="h-full bg-blue-500" 
+                        className="h-full bg-blue-500"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 mt-4">
-                    <StatBox label="Streak" value="12 Days" icon={<TrendingUp size={14}/>} color="text-orange-400" />
-                    <StatBox label="Skills" value={user?.skills ? `${user.skills.length}/24` : "--"} icon={<CheckCircle2 size={14}/>} color="text-green-400" />
+                    <StatBox label="Streak" value="12 Days" icon={<TrendingUp size={14} />} color="text-orange-400" />
+                    <StatBox label="Skills" value={user?.skills ? `${user.skills.length}/24` : "--"} icon={<CheckCircle2 size={14} />} color="text-green-400" />
                   </div>
                 </div>
               </div>
@@ -309,7 +377,7 @@ const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
 };
 
 const StageCard = ({ stage, index, onStatusChange }) => {
-  const [expanded, setExpanded] = useState(index === 0); 
+  const [expanded, setExpanded] = useState(index === 0);
 
   return (
     <motion.div
@@ -319,7 +387,7 @@ const StageCard = ({ stage, index, onStatusChange }) => {
       className="relative pl-8 border-l-2 border-slate-800"
     >
       <div className={`absolute -left-[9px] top-0 h-4 w-4 rounded-full border-2 border-slate-900 transition-colors ${stage.progress === 100 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]'}`} />
-      
+
       <div className="bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden hover:border-slate-700 transition-colors">
         <div
           className="p-5 cursor-pointer flex items-center justify-between"
@@ -342,7 +410,7 @@ const StageCard = ({ stage, index, onStatusChange }) => {
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${stage.progress}%` }}
-                  className={`h-full transition-colors ${stage.progress === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`} 
+                  className={`h-full transition-colors ${stage.progress === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
                 />
               </div>
             </div>
@@ -360,10 +428,10 @@ const StageCard = ({ stage, index, onStatusChange }) => {
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
                 {stage.skills.map((skill, idx) => (
-                  <SkillCard 
-                    key={idx} 
-                    skill={skill} 
-                    onStatusUpdate={(val) => onStatusChange(stage.id, skill.name, val)} 
+                  <SkillCard
+                    key={idx}
+                    skill={skill}
+                    onStatusUpdate={(val) => onStatusChange(stage.id, skill.name, val)}
                   />
                 ))}
               </div>
@@ -376,15 +444,15 @@ const StageCard = ({ stage, index, onStatusChange }) => {
 };
 
 const SkillCard = ({ skill, onStatusUpdate }) => (
-  <motion.div 
+  <motion.div
     whileHover={{ y: -2 }}
     className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 group hover:bg-slate-800/60 transition-colors"
   >
     <div className="flex justify-between items-start mb-4">
       <h4 className="font-semibold text-slate-200 text-sm leading-tight">{skill.name}</h4>
-      <StatusBadge 
-        status={skill.status} 
-        onChange={onStatusUpdate} 
+      <StatusBadge
+        status={skill.status}
+        onChange={onStatusUpdate}
       />
     </div>
     <div className="flex items-center justify-between">
@@ -392,10 +460,10 @@ const SkillCard = ({ skill, onStatusUpdate }) => (
         {skill.difficulty}
       </span>
       {skill.url ? (
-        <a 
-          href={skill.url} 
-          target="_blank" 
-          rel="noopener noreferrer" 
+        <a
+          href={skill.url}
+          target="_blank"
+          rel="noopener noreferrer"
           className="text-[10px] text-blue-400 font-bold hover:underline flex items-center gap-1"
         >
           DOCS <ExternalLink size={10} />

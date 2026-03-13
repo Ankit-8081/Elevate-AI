@@ -254,8 +254,14 @@ const ProfilePage = () => {
           <div className="relative mb-8">
             <div className="group relative h-48 w-full rounded-3xl border border-white/10 overflow-hidden bg-gradient-to-r from-blue-900/40 via-purple-900/40 to-black">
               {coverImage && (
-                <img src={`${API_BASE}${coverImage}`} alt="Cover" className="w-full h-full object-cover" />
+                <img
+                  src={`http://127.0.0.1:8000${coverImage}`}
+                  alt="Cover"
+                  className="w-full h-full object-cover"
+                />
               )}
+
+              {/* Cover Image Upload Button */}
               <button
                 onClick={() => coverInputRef.current?.click()}
                 className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-lg text-xs font-medium text-white opacity-0 group-hover:opacity-100 transition-all border border-white/10"
@@ -269,7 +275,7 @@ const ProfilePage = () => {
               <div className="relative group">
                 <div className="w-32 h-32 rounded-3xl overflow-hidden border-4 border-[#050b14] shadow-2xl bg-gray-800 flex items-center justify-center">
                   {image ? (
-                    <img src={`${API_BASE}${image}`} className="w-full h-full object-cover" alt="Profile" />
+                    <img src={`http://127.0.0.1:8000${image}`} className="w-full h-full object-cover" />
                   ) : (
                     <User size={48} className="text-gray-500" />
                   )}
@@ -281,7 +287,7 @@ const ProfilePage = () => {
               </div>
 
               <div className="mb-4">
-                <h1 className="text-3xl font-bold text-white mb-2">{user?.name || "User Name"}</h1>
+                <h1 className="text-3xl font-bold text-white mb-2">{username}</h1>
                 <div className="inline-flex flex-col gap-2 p-4 rounded-2xl bg-[#0f172a] border border-blue-500/40 shadow-xl">
                   <p className="text-blue-400 font-bold text-sm flex items-center gap-2">
                     <Code size={14} /> {current_role || "Professional"}

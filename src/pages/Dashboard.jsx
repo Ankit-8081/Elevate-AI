@@ -55,7 +55,7 @@ const ActivityItem = ({ title, time, type }) => (
 );
 
 export default function CareerDashboard() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState({});
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState([
     { role: 'ai', content: 'Welcome back! How can I help you accelerate your career today?' }
@@ -88,13 +88,13 @@ export default function CareerDashboard() {
   const askAI = async (customPrompt) => {
     const activePrompt = customPrompt || prompt;
     if (!activePrompt.trim()) return;
-    
+
     const token = localStorage.getItem("token");
     const userMsg = { role: 'user', content: activePrompt };
     setMessages(prev => [...prev, userMsg]);
     setPrompt("");
     setLoadingAI(true);
-    
+
     try {
       const res = await axios.post(
         "http://127.0.0.1:8000/ai/chat",
@@ -116,12 +116,12 @@ export default function CareerDashboard() {
   const formatAiReply = (text) => {
     if (!text) return null;
     let listCounter = 0;
-    
+
     return text.split('\n').map((line, i) => {
       let processedLine = line.trim();
-      
+
       if (processedLine.startsWith('+')) {
-        const letter = String.fromCharCode(97 + (listCounter % 26)); 
+        const letter = String.fromCharCode(97 + (listCounter % 26));
         processedLine = `${letter}) ${processedLine.substring(1).trim()}`;
         listCounter++;
       }
@@ -157,7 +157,7 @@ export default function CareerDashboard() {
           background: rgba(255, 255, 255, 0.1);
         }
       `}</style>
-      
+
       <Sidebar />
 
       <main
@@ -168,7 +168,7 @@ export default function CareerDashboard() {
         <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="flex-1 overflow-y-auto p-8 max-w-7xl mx-auto w-full relative z-10 custom-dark-scrollbar">
-          
+
           <section className="mb-10 flex justify-between items-end">
             <div>
               <motion.div
@@ -177,7 +177,7 @@ export default function CareerDashboard() {
                 className="flex items-center gap-3 mb-2"
               >
                 <h1 className="text-3xl font-bold text-white tracking-tight">
-                  Welcome back, {user ? user.name : "Explorer"}
+                  Welcome back, {user?.username || "Explorer"}
                 </h1>
               </motion.div>
               <p className="text-slate-400 text-sm">Real-time career insights and trajectory tracking.</p>
@@ -248,7 +248,7 @@ export default function CareerDashboard() {
                     <CheckCircle2 size={18} className="text-emerald-400" />
                   </div>
                 </div>
-                
+
                 <div className="flex-1 overflow-y-auto custom-dark-scrollbar space-y-3 relative z-10 pr-2">
                   {(!user?.skills || user.skills.length === 0) ? (
                     <div className="text-center text-slate-400 text-sm py-8">Upload a resume to generate your skill breakdown</div>

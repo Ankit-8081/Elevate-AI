@@ -15,6 +15,7 @@ import json
 
 
 import base64
+from Roadmap import Roadmap
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 from dotenv import load_dotenv
@@ -29,6 +30,7 @@ from chatbot_service import ask_bot
 from web_scraping import LinkedInScraper, NaukriScraper, SerpApiScraper
 
 app = FastAPI()
+roadmap_engine = Roadmap()
 app.mount("/images", StaticFiles(directory="profile_images"), name="images")
 load_dotenv()
 
@@ -48,6 +50,12 @@ class MarketReadiness(BaseModel):
     ai_suggestion: str = Field(description="Strategic advice")
     market_readiness: str = Field(description="High, Medium, or Low readiness")
     skills: List[str] = Field(description="List of technical skills extracted from the resume")
+
+class RoadmapRequest(BaseModel):
+    topic: str
+    experience_level: str
+    learning_style: str
+    limit: int = 5
 
 class ProfileUpdate(BaseModel):
     name: str
@@ -224,7 +232,7 @@ def signup(data: SignupRequest):
     hashed = hash_password(data.password)
 
     cursor.execute(
-        "INSERT INTO users (name, linkedin, email, password) VALUES (?, ?, ?, ?)",
+        "INSERT INTO users (username, linkedin, email, password) VALUES (?, ?, ?, ?)",
         (data.name, data.linkedin, data.email, hashed)
     )
 
@@ -278,6 +286,22 @@ def dashboard(credentials: HTTPAuthorizationCredentials = Depends(security)):
         "message": "Access granted",
         "user": user_id
     }
+
+@app.post("/roadmap")
+def generate_roadmap(data: RoadmapRequest):
+
+    try:
+        roadmap = roadmap_engine.get_roadmap(
+            topic=data.topic,
+            experience_level=data.experience_level,
+            learning_style=data.learning_style,
+            upper_limit=data.limit
+        )
+
+        return roadmap
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/me")
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -522,36 +546,37 @@ def search_jobs(data: JobSearchRequest):
 
 @app.get("/jobs")
 def get_jobs():
+    # raise RuntimeError
 
-    linkedin = LinkedInScraper()
-    naukri = NaukriScraper()
-    web = SerpApiScraper()
+#     linkedin = LinkedInScraper()
+#     naukri = NaukriScraper()
+#     web = SerpApiScraper()
 
-    jobs = []
+#     jobs = []
 
-    try:
-        linkedin_jobs = linkedin.fetch_jobs("", "India")
-        if isinstance(linkedin_jobs, list):
-            for j in linkedin_jobs:
-                j["source"] = "LinkedIn"
-                jobs.append(j)
+#     try:
+#         linkedin_jobs = linkedin.fetch_jobs("", "India")
+#         if isinstance(linkedin_jobs, list):
+#             for j in linkedin_jobs:
+#                 j["source"] = "LinkedIn"
+#                 jobs.append(j)
 
-        naukri_jobs = naukri.fetch_jobs("", "India")
-        if isinstance(naukri_jobs, list):
-            for j in naukri_jobs:
-                j["source"] = "Naukri"
-                jobs.append(j)
+#         naukri_jobs = naukri.fetch_jobs("", "India")
+#         if isinstance(naukri_jobs, list):
+#             for j in naukri_jobs:
+#                 j["source"] = "Naukri"
+#                 jobs.append(j)
 
-        web_jobs = web.fetch_jobs("", "India")
-        if isinstance(web_jobs, list):
-            for j in web_jobs:
-                j["source"] = "Web"
-                jobs.append(j)
+#         web_jobs = web.fetch_jobs("", "India")
+#         if isinstance(web_jobs, list):
+#             for j in web_jobs:
+#                 j["source"] = "Web"
+#                 jobs.append(j)
 
-    except Exception as e:
-        print("Job fetch error:", e)
+#     except Exception as e:
+#         print("Job fetch error:", e)
 
-    return {"jobs": jobs}   
+    return "Search to get job results"   
 
 @app.post("/ai/chat")
 def chat_ai(
