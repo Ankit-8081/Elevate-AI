@@ -15,6 +15,7 @@ llm = ChatGoogleGenerativeAI(
 )
 
 class MarketReadiness(BaseModel):
+    market_readiness:int = Field(description="Percentage Readiness of User")
     key_strengths: List[str] = Field(description="Top professional strengths found")
     critical_gaps: List[str] = Field(description="Major missing qualifications")
     missing_keywords: List[str] = Field(description="Specific technical terms missing")
@@ -53,6 +54,7 @@ if __name__ == "__main__":
     report = analyze_resume_direct(PATH, TARGET)
     report = report.model_dump()
     print("### MARKET READINESS REPORT ###")
+    print(f"Market Readiness: " , (report['market_readiness']))
     print(f"Key Strengths: {', '.join(report['key_strengths'])}")
     print(f"Critical Gaps: {', '.join(report['critical_gaps'])}")
     print(f"Missing Keywords: {', '.join(report['missing_keywords'])}")

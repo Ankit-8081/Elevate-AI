@@ -66,7 +66,7 @@ class Roadmap:
             )),
             ("human", "Generate a mastery roadmap for the following technical domain: {topic}")
         ])
-        
+
         chain = prompt | self.structured_llm
         response = chain.invoke({
             "topic": topic,
