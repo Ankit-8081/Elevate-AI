@@ -65,9 +65,9 @@ const Sidebar = () => {
         onClick={() => navigate("/Dashboard")}
         className="flex items-center gap-3 mb-8 cursor-pointer px-2"
       >
-        <div className="p-2 bg-gradient-to-br from-cyan-500 to-violet-600 rounded-lg">
-          <Sparkles className="w-5 h-5 text-white" />
-        </div>
+          <div className="p-2 bg-gradient-to-br from-cyan-500 to-violet-600 rounded-lg">
+           <Sparkles className="w-5 h-5 text-white" />
+          </div>
 
         {expanded && (
           <h1 className="text-lg font-bold text-white tracking-tight">

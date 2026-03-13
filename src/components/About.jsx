@@ -20,9 +20,13 @@ import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import aayushImg from "../assets/Aayush.jpeg";
 import prateekImg from "../assets/Prateek.jpeg";
+import rasikaImg from "../assets/Rasika.jpg"
+import emailjs from "@emailjs/browser";
+import { useRef } from "react";
 
 const AboutPage = () => {
   const location = useLocation();
+  const form = useRef();
 
 useEffect(() => {
   if (location.hash) {
@@ -68,10 +72,26 @@ useEffect(() => {
       role: "Database & Creative Context",
       desc: "Designing high-performance data schemas and ensuring creative consistency.",
       icon: <Database className="text-pink-400" />,
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200&h=200&auto=format&fit=crop"
+      image: rasikaImg
     }
   ];
+const sendEmail = (e) => {
+  e.preventDefault();
 
+  emailjs.sendForm(
+    "service_zg7e9zs",
+    "template_2u5j608",
+    form.current,
+    "T3Y0FqLGUreR9NseC"
+  ).then(
+    () => {
+      alert("Message sent successfully!");
+    },
+    () => {
+      alert("Failed to send message.");
+    }
+  );
+};
   return (
     <div className="bg-[#050b14] text-white min-h-screen font-sans selection:bg-blue-500/30 overflow-x-hidden">
       
@@ -202,7 +222,7 @@ useEffect(() => {
     </div>
     <div>
       <p className="text-xs text-slate-500 uppercase tracking-widest">Email Us</p>
-      <span className="font-medium">contact@elevateai.com</span>
+      <span className="font-medium">elevateai2026@gmail.com</span>
     </div>
   </div>
 
@@ -228,13 +248,33 @@ useEffect(() => {
 
 </div>
         </motion.div>
-        <motion.form {...fadeIn} className={`${glassStyle} p-8 space-y-4`}>
+        <motion.form
+  ref={form}
+  onSubmit={sendEmail}
+  {...fadeIn}
+  className={`${glassStyle} p-8 space-y-4`}
+>
            <h1 className="text-4xl text-center font-bold mb-4">Contact Us</h1>
           <div className="grid md:grid-cols-2 gap-4">
-            <input type="text" placeholder="Name" className="bg-white/5 border border-white/10 rounded-xl p-4 outline-none focus:border-blue-500 transition-colors w-full" />
-            <input type="email" placeholder="Email" className="bg-white/5 border border-white/10 rounded-xl p-4 outline-none focus:border-blue-500 transition-colors w-full" />
+           <input
+  name="name"
+  type="text"
+  placeholder="Name"
+  className="bg-white/5 border border-white/10 rounded-xl p-4 outline-none focus:border-blue-500 transition-colors w-full"
+/>
+            <input
+  name="email"
+  type="email"
+  placeholder="Email"
+  className="bg-white/5 border border-white/10 rounded-xl p-4 outline-none focus:border-blue-500 transition-colors w-full"
+/>
           </div>
-          <textarea placeholder="Message" rows={4} className="bg-white/5 border border-white/10 rounded-xl p-4 outline-none focus:border-blue-500 transition-colors w-full resize-none" />
+          <textarea
+  name="message"
+  placeholder="Message"
+  rows={4}
+  className="bg-white/5 border border-white/10 rounded-xl p-4 outline-none focus:border-blue-500 transition-colors w-full resize-none"
+/>
           <button className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98]">
             Submit Message
           </button>

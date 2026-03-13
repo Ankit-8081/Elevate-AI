@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Terminal, Sparkles, Instagram, Linkedin, Twitter, Check
 } from 'lucide-react';
 import { Link } from "react-router-dom";
+import logo from "../assets/logo.jpg";
 
 const GlassCard = ({ children, className = "" }) => (
   <motion.div 
@@ -53,12 +54,13 @@ const Navbar = () => {
       isScrolled ? 'h-[64px] bg-[#050b14]/95 shadow-xl' : 'h-20 bg-transparent'
     } backdrop-blur-md border-b border-white/10`}>
       <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center group-hover:shadow-[0_0_15px_rgba(37,99,235,0.5)] transition-all">
-            <Terminal size={18} className="text-white" />
-          </div>
-          <span className="text-xl font-bold text-white tracking-tight">Elevate AI</span>
-        </Link>
+       <Link to="/" className="flex items-center gap-3">
+       <img
+        src={logo}
+        alt="Elevate AI"
+        className="h-16 w-auto object-contain"
+       />
+      </Link>
         
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
           {navLinks.map((link) => (

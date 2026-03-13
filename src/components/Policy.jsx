@@ -189,10 +189,10 @@ useEffect(() => {
         <motion.div {...fadeIn} className="text-center pt-12">
           <p className="text-slate-500 mb-4 font-medium">Have questions regarding our policies?</p>
           <a 
-            href="mailto:legal@elevateai.com" 
+            href="mailto:elevateai2026@gmail.com" 
             className="text-blue-400 hover:text-blue-300 transition-colors font-bold underline decoration-blue-500/30 underline-offset-8"
           >
-            legal@elevateai.com
+            elevateai2026@gmail.com
           </a>
         </motion.div>
 

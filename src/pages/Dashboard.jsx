@@ -9,10 +9,10 @@ import {
   ArrowUpRight,
   Sparkles,
   LogOut,
-  User as UserIcon,
   TrendingUp,
   Clock,
-  Zap
+  Zap,
+  Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../components/sidebar.jsx';
@@ -57,7 +57,9 @@ const ActivityItem = ({ title, time, type }) => (
 export default function CareerDashboard() {
   const [user, setUser] = useState(null);
   const [prompt, setPrompt] = useState("");
-  const [aiReply, setAiReply] = useState("");
+  const [messages, setMessages] = useState([
+    { role: 'ai', content: 'Welcome back! How can I help you accelerate your career today?' }
+  ]);
   const [loadingAI, setLoadingAI] = useState(false);
   const navigate = useNavigate();
 
@@ -88,8 +90,10 @@ export default function CareerDashboard() {
     if (!activePrompt.trim()) return;
     
     const token = localStorage.getItem("token");
+    const userMsg = { role: 'user', content: activePrompt };
+    setMessages(prev => [...prev, userMsg]);
+    setPrompt("");
     setLoadingAI(true);
-    setAiReply("");
     
     try {
       const res = await axios.post(
@@ -101,9 +105,10 @@ export default function CareerDashboard() {
           }
         }
       );
-      setAiReply(res.data.reply);
+      setMessages(prev => [...prev, { role: 'ai', content: res.data.reply }]);
     } catch (err) {
       console.error("AI error:", err);
+      setMessages(prev => [...prev, { role: 'ai', content: "Sorry, I encountered an error processing that request." }]);
     }
     setLoadingAI(false);
   };
@@ -136,21 +141,20 @@ export default function CareerDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050b14] text-slate-200 flex font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#050b14] text-slate-200 flex font-sans selection:bg-blue-500/30 overflow-hidden">
       <style>{`
         .custom-dark-scrollbar::-webkit-scrollbar {
-          width: 5px;
+          width: 4px;
         }
         .custom-dark-scrollbar::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.02);
-          border-radius: 10px;
+          background: transparent;
         }
         .custom-dark-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.05);
           border-radius: 10px;
         }
         .custom-dark-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.1);
         }
       `}</style>
       
@@ -172,9 +176,6 @@ export default function CareerDashboard() {
                 animate={{ opacity: 1, x: 0 }}
                 className="flex items-center gap-3 mb-2"
               >
-                <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                  <Sparkles className="text-blue-400" size={20} />
-                </div>
                 <h1 className="text-3xl font-bold text-white tracking-tight">
                   Welcome back, {user ? user.name : "Explorer"}
                 </h1>
@@ -198,19 +199,14 @@ export default function CareerDashboard() {
           </section>
 
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-            <StatCard
-              icon={TrendingUp}
-              label="Market Readiness"
-              value={user?.market_readiness || "--"}
-              color="bg-blue-500"
-            />
-            <StatCard icon={Briefcase} label="Active Applications" value="08" color="bg-purple-500" />
+            <StatCard icon={TrendingUp} label="Market Readiness" value={user?.market_readiness || "--"} color="bg-blue-500" />
+            <StatCard icon={CheckCircle2} label="Verified Skills" value={user?.skills?.length || "0"} color="bg-yellow-500" />
             <StatCard icon={Zap} label="Learning Streak" value="14 Days" color="bg-emerald-500" />
             <StatCard icon={Clock} label="Avg. Response Time" value="2.4d" color="bg-amber-500" />
           </section>
 
-          <div className="grid lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-4 flex flex-col gap-8">
+          <div className="grid lg:grid-cols-12 gap-8 mb-8">
+            <div className="lg:col-span-4 flex flex-col gap-8 h-[500px]">
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-sm font-semibold text-white mb-6 flex items-center justify-between">
                   Next Milestone
@@ -223,155 +219,94 @@ export default function CareerDashboard() {
                       <span className="text-sm font-bold text-blue-400">65%</span>
                     </div>
                     <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: '65%' }}
-                        transition={{ duration: 1.5 }}
-                        className="h-full bg-blue-500 rounded-full"
-                      />
+                      <motion.div initial={{ width: 0 }} animate={{ width: '65%' }} transition={{ duration: 1.5 }} className="h-full bg-blue-500 rounded-full" />
                     </div>
                   </div>
-                  <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Complete <span className="text-blue-400 font-medium">EC2 Fundamentals</span> to reach 80% readiness.
-                    </p>
+                  <div className="p-3 bg-white/5 rounded-xl border border-white/5 text-[11px] text-slate-400">
+                    Complete <span className="text-blue-400 font-medium">EC2 Fundamentals</span> to reach 80% readiness.
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                <h3 className="text-sm font-semibold text-white mb-4">Recent Activity</h3>
-                <div className="space-y-1">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex-1 overflow-hidden flex flex-col">
+                <h3 className="text-sm font-semibold text-white mb-4 shrink-0">Recent Activity</h3>
+                <div className="space-y-1 overflow-y-auto custom-dark-scrollbar flex-1">
                   <ActivityItem title="Applied to Vercel" time="2 hours ago" type="default" />
                   <ActivityItem title="Python Quiz Passed" time="5 hours ago" type="success" />
                   <ActivityItem title="Profile viewed by Meta" time="Yesterday" type="default" />
+                  <ActivityItem title="Researched Rust" time="2 days ago" type="default" />
                 </div>
               </div>
             </div>
 
-            <div className="lg:col-span-4">
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col relative overflow-hidden group">
+            <div className="lg:col-span-4 flex flex-col h-[500px]">
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col relative overflow-hidden group h-full">
                 <div className="absolute inset-0 bg-emerald-600/[0.02] group-hover:bg-emerald-600/[0.05] transition-colors" />
-                <div className="flex justify-between items-start mb-8">
+                <div className="flex justify-between items-start mb-6 shrink-0 relative z-10">
                   <h3 className="text-xl font-bold text-white mb-1">Skill Breakdown</h3>
-                  <div className="relative w-12 h-12">
-                    <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse" />
-                    <div className="relative w-full h-full rounded-full border border-emerald-500/30 flex items-center justify-center bg-[#0a121e]">
-                      <CheckCircle2 size={20} className="text-emerald-400" />
-                    </div>
+                  <div className="relative w-10 h-10 rounded-full border border-emerald-500/30 flex items-center justify-center bg-[#0a121e]">
+                    <CheckCircle2 size={18} className="text-emerald-400" />
                   </div>
                 </div>
-                <div className="w-full space-y-4">
+                
+                <div className="flex-1 overflow-y-auto custom-dark-scrollbar space-y-3 relative z-10 pr-2">
                   {(!user?.skills || user.skills.length === 0) ? (
-                    <div className="text-center text-slate-400 text-sm py-8">
-                      Upload a resume to generate your skill breakdown
-                    </div>
+                    <div className="text-center text-slate-400 text-sm py-8">Upload a resume to generate your skill breakdown</div>
                   ) : (
                     user.skills.map((skill, index) => (
-                      <div
-                        key={index}
-                        className="flex justify-between items-center p-4 bg-cyan-400/10 border border-cyan-400/20 rounded-2xl backdrop-blur-sm transition-transform hover:scale-[1.02]"
-                      >
-                        <span className="text-[11px] font-bold text-white uppercase tracking-wider">
-                          {skill}
-                        </span>
-                        <span className="text-[10px] font-black uppercase tracking-tighter text-cyan-400">
-                          detected
-                        </span>
+                      <div key={index} className="flex-none h-16 flex justify-between items-center p-4 bg-cyan-400/10 border border-cyan-400/20 rounded-2xl backdrop-blur-sm">
+                        <span className="text-[11px] font-bold text-white uppercase tracking-wider">{skill}</span>
+                        <span className="text-[10px] font-black uppercase tracking-tighter text-cyan-400">detected</span>
                       </div>
                     ))
                   )}
                 </div>
 
-                <button className="mt-8 w-full py-4 bg-white text-[#050b14] hover:bg-emerald-400 transition-colors rounded-2xl font-bold text-sm shadow-xl shadow-emerald-500/10">
+                <button className="mt-6 shrink-0 w-full py-4 bg-white text-[#050b14] hover:bg-emerald-400 transition-colors rounded-2xl font-bold text-sm relative z-10">
                   View Full Roadmap
                 </button>
               </div>
             </div>
 
-            <div className="lg:col-span-4 flex flex-col gap-8">
-              <div className="bg-gradient-to-br from-blue-600/20 via-blue-600/5 to-transparent border border-blue-500/20 rounded-2xl p-6 backdrop-blur-md">
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="p-1.5 bg-blue-500 rounded-lg shadow-lg shadow-blue-500/20">
-                    <Sparkles size={16} className="text-white" />
-                  </div>
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">AI Copilot</h3>
+            <div className="lg:col-span-4 flex flex-col h-[500px]">
+              <div className="flex-1 bg-[#0f0f12] border border-white/10 rounded-3xl flex flex-col overflow-hidden relative">
+                <div className="px-5 py-5 border-b border-white/5 bg-black/20 flex items-center shrink-0">
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-blue-400 flex items-center gap-2">
+                    <Sparkles size={12} /> AI Career Copilot
+                  </span>
                 </div>
-                <div className="space-y-3">
-                  <button 
-                    onClick={() => {
-                      setPrompt("Optimize my resume for Stripe");
-                      askAI("Optimize my resume for Stripe");
-                    }}
-                    className="w-full text-left p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all text-xs text-slate-300"
-                  >
-                    Optimize my resume for Stripe
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setPrompt("What skills am I missing for Lead roles?");
-                      askAI("What skills am I missing for Lead roles?");
-                    }}
-                    className="w-full text-left p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all text-xs text-slate-300"
-                  >
-                    What skills am I missing for Lead roles?
-                  </button>
-                  <div className="pt-2 relative">
-                    <input
-                      type="text"
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") askAI();
-                      }}
-                      placeholder="Ask your career agent..."
-                      className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 px-4 text-xs focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-600"
-                    />
-                    {loadingAI && (
-                      <p className="text-xs text-slate-500 mt-2 flex items-center gap-2">
-                        <motion.span 
-                          animate={{ rotate: 360 }}
-                          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                        >
-                          <Zap size={12} className="text-blue-400" />
-                        </motion.span>
-                        AI is thinking...
-                      </p>
-                    )}
-                    {aiReply && (
-                      <div className="mt-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-slate-300 max-h-48 overflow-y-auto custom-dark-scrollbar">
-                        {formatAiReply(aiReply)}
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-dark-scrollbar">
+                  {messages.map((msg, i) => (
+                    <motion.div initial={{ opacity: 0, x: msg.role === 'user' ? 10 : -10 }} animate={{ opacity: 1, x: 0 }} key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] p-3 rounded-2xl text-[11px] leading-relaxed ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white/5 border border-white/10 text-slate-300 rounded-bl-none'}`}>
+                        {msg.role === 'ai' ? formatAiReply(msg.content) : msg.content}
                       </div>
-                    )}
-                    <ArrowUpRight
-                      size={14}
-                      onClick={() => askAI()}
-                      className="absolute right-3 top-[28px] text-slate-500 hover:text-blue-400 cursor-pointer transition-colors"
-                    />
-                  </div>
+                    </motion.div>
+                  ))}
+                  {loadingAI && (
+                    <div className="flex justify-start">
+                      <div className="bg-white/5 border border-white/10 p-3 rounded-2xl rounded-bl-none">
+                        <Zap size={12} className="text-blue-400 animate-pulse" />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
 
-              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-white mb-1">
-                    {user?.skills ? user.skills.length : 0}
+                <div className="p-4 border-t border-white/5 bg-black/20 space-y-3 shrink-0">
+                  <div className="flex flex-wrap gap-2">
+                    {['Market Insights', 'Interview Prep', 'Skill Gaps'].map((label) => (
+                      <button key={label} onClick={() => askAI(label)} className="text-[10px] px-2 py-1 bg-white/5 hover:bg-blue-500/20 hover:text-blue-300 border border-white/10 rounded-full transition-all flex items-center gap-1">
+                        <Zap size={10} /> {label}
+                      </button>
+                    ))}
                   </div>
-                  <div className="text-xs text-slate-400 font-medium uppercase tracking-wider">
-                    {user?.skills?.length ? "Verified Skills" : "Upload Resume"}
-                  </div>
-                </div>
-                <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
-                  <span className="text-emerald-400"><CheckCircle2 size={24} /></span>
-                </div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-                <div className="flex gap-3">
-                  <AlertCircle size={18} className="text-amber-400 shrink-0" />
-                  <p className="text-[11px] text-amber-200/80 leading-relaxed">
-                    <span className="font-bold text-amber-400">Market Insight:</span> Go and Rust are trending for your current job matches. Consider adding them to your roadmap.
-                  </p>
+                  <form onSubmit={(e) => { e.preventDefault(); askAI(); }} className="relative">
+                    <input type="text" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask your career agent..." className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-slate-600" />
+                    <button type="submit" className="absolute right-2 top-1.5 p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors">
+                      <Send size={14} />
+                    </button>
+                  </form>
                 </div>
               </div>
             </div>
