@@ -230,8 +230,8 @@ const FindJobs = () => {
               ) : (
 
                 <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-3xl">
-                  <AlertCircle className="mx-auto text-slate-600 mb-4" size={48} />
-                  <h3 className="text-xl font-medium text-white">No jobs found</h3>
+                  <Briefcase className="mx-auto text-slate-600 mb-4" size={48} />
+                  <h3 className="text-xl font-medium text-white">Start Your Job Search</h3>
                 </div>
 
               )}

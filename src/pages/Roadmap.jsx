@@ -364,7 +364,12 @@ const SkillRoadmap = () => {
 
                   <div className="grid grid-cols-2 gap-3 mt-4">
                     <StatBox label="Streak" value="12 Days" icon={<TrendingUp size={14} />} color="text-orange-400" />
-                    <StatBox label="Skills" value={user?.skills ? `${user.skills.length}/24` : "--"} icon={<CheckCircle2 size={14} />} color="text-green-400" />
+                    <StatBox 
+  label="Skills"
+  value={`${totalCompleted}/${allSkills.length}`}
+  icon={<CheckCircle2 size={14} />}
+  color="text-green-400"
+/>
                   </div>
                 </div>
               </div>

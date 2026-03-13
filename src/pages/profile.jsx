@@ -10,7 +10,6 @@ import {
 import Sidebar from '../components/sidebar';
 import axios from "axios";
 
-// --- UI COMPONENTS ---
 
 const GlassCard = ({ children, className = "" }) => (
   <motion.div
@@ -87,73 +86,92 @@ const StatsPanel = () => {
 };
 
 const ProfessionalLinks = ({ links, setLinks }) => {
-  const addLink = () => {
-    setLinks([...links, { id: Date.now(), platform: '', url: '' }]);
+  const [editing, setEditing] = useState({
+    linkedin: false,
+    portfolio: false
+  });
+
+  const updateLink = (platform, value) => {
+    const updated = links.filter(l => l.platform !== platform);
+    updated.push({ id: platform, platform, url: value });
+    setLinks(updated);
   };
 
-  const removeLink = (id) => {
-    setLinks(links.filter(link => link.id !== id));
-  };
-
-  const updateLink = (id, field, value) => {
-    setLinks(links.map(link => link.id === id ? { ...link, [field]: value } : link));
+  const getUrl = (platform) => {
+    const found = links.find(l => l.platform === platform);
+    return found ? found.url : "";
   };
 
   return (
     <GlassCard>
-      <div className="flex justify-between items-center mb-6">
-        <SectionHeader icon={Globe} title="Professional Links" />
-        <button
-          onClick={addLink}
-          className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg text-blue-400 transition-colors"
-        >
-          <Plus size={18} />
-        </button>
-      </div>
+      <SectionHeader icon={Globe} title="Professional Links" />
 
       <div className="space-y-4">
-        <AnimatePresence>
-          {links.map((link) => (
-            <motion.div
-              key={link.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="group bg-black/20 border border-white/5 rounded-xl p-3 relative"
-            >
-              <div className="flex items-center justify-between mb-1">
-                <input
-                  value={link.platform}
-                  onChange={(e) => updateLink(link.id, 'platform', e.target.value)}
-                  placeholder="Platform (e.g. LinkedIn, Github)"
-                  className="bg-transparent text-[10px] font-bold text-blue-400 uppercase tracking-widest focus:outline-none w-full"
-                />
-                <button
-                  onClick={() => removeLink(link.id)}
-                  className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-              <input
-                value={link.url}
-                onChange={(e) => updateLink(link.id, 'url', e.target.value)}
-                placeholder="https://..."
-                className="bg-transparent text-sm text-gray-300 w-full focus:outline-none"
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        {links.length === 0 && (
-          <p className="text-center text-xs text-gray-500 py-4">No links added yet.</p>
-        )}
+
+        {/* LinkedIn */}
+        <div className="relative">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400">
+            <Linkedin size={16} />
+          </div>
+
+          <input
+            disabled={!editing.linkedin}
+            value={getUrl("linkedin")}
+            onChange={(e) => updateLink("linkedin", e.target.value)}
+            placeholder="LinkedIn Profile URL"
+            className={`w-full bg-black/20 border ${
+              editing.linkedin ? "border-blue-500/50" : "border-white/5"
+            } rounded-xl py-2.5 pl-10 pr-12 text-gray-300 disabled:opacity-60`}
+          />
+
+          <button
+            onClick={() =>
+              setEditing(prev => ({ ...prev, linkedin: !prev.linkedin }))
+            }
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg text-gray-400"
+          >
+            {editing.linkedin ? (
+              <Check size={16} className="text-green-400" />
+            ) : (
+              <Edit2 size={14} />
+            )}
+          </button>
+        </div>
+
+        {/* Portfolio */}
+        <div className="relative">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400">
+            <Globe size={16} />
+          </div>
+
+          <input
+            disabled={!editing.portfolio}
+            value={getUrl("portfolio")}
+            onChange={(e) => updateLink("portfolio", e.target.value)}
+            placeholder="Portfolio Website URL"
+            className={`w-full bg-black/20 border ${
+              editing.portfolio ? "border-blue-500/50" : "border-white/5"
+            } rounded-xl py-2.5 pl-10 pr-12 text-gray-300 disabled:opacity-60`}
+          />
+
+          <button
+            onClick={() =>
+              setEditing(prev => ({ ...prev, portfolio: !prev.portfolio }))
+            }
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg text-gray-400"
+          >
+            {editing.portfolio ? (
+              <Check size={16} className="text-green-400" />
+            ) : (
+              <Edit2 size={14} />
+            )}
+          </button>
+        </div>
+
       </div>
     </GlassCard>
   );
 };
-
-// --- MAIN PAGE ---
-
 const ProfilePage = () => {
   const [is2FA, setIs2FA] = useState(true);
   const [user, setUser] = useState(null);
@@ -172,6 +190,8 @@ const ProfilePage = () => {
   const [current_role, setCurrentRole] = useState("");
   const [target_role, setTargetRole] = useState("");
   const [links, setLinks] = useState([]);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const API_BASE = "http://127.0.0.1:8000";
 
@@ -200,19 +220,25 @@ const ProfilePage = () => {
   }, []);
 
   const saveProfile = async () => {
-    const token = localStorage.getItem("token");
-    try {
-      await axios.post(
-        `${API_BASE}/profile/update`,
-        { name, username, phone, bio, current_role, target_role, professional_links: links },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert("Profile saved successfully 🚀");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save profile");
-    }
-  };
+  const token = localStorage.getItem("token");
+  setSaving(true);
+
+  try {
+    await axios.post(
+      `${API_BASE}/profile/update`,
+      { name, username, phone, bio, current_role, target_role, professional_links: links },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 3000);
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setSaving(false);
+  }
+};
 
   const uploadFile = async (file, endpoint, setter) => {
     const token = localStorage.getItem("token");
@@ -275,10 +301,16 @@ const ProfilePage = () => {
               <div className="relative group">
                 <div className="w-32 h-32 rounded-3xl overflow-hidden border-4 border-[#050b14] shadow-2xl bg-gray-800 flex items-center justify-center">
                   {image ? (
-                    <img src={`http://127.0.0.1:8000${image}`} className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={48} className="text-gray-500" />
-                  )}
+  <img
+    src={`http://127.0.0.1:8000${image}`}
+    className="w-full h-full object-cover"
+    loading="lazy"
+  />
+) : (
+  <span className="text-3xl font-bold text-gray-400">
+    {username?.charAt(0)?.toUpperCase() || "U"}
+  </span>
+)}
                 </div>
                 <button onClick={() => profileInputRef.current?.click()} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-3xl">
                   <Camera className="text-white" />
@@ -381,6 +413,24 @@ const ProfilePage = () => {
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #334155; }
       `}</style>
+      <AnimatePresence>
+  {showSuccess && (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 40 }}
+      className="fixed bottom-24 right-8 bg-[#0f172a] border border-green-500/30 text-green-400 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50"
+    >
+      <Check size={20} className="text-green-400" />
+      <div>
+        <p className="font-semibold text-sm">Profile Saved</p>
+        <p className="text-xs text-gray-400">
+          Your profile has been updated successfully.
+        </p>
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
     </div>
   );
 };
