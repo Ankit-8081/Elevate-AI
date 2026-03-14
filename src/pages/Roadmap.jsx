@@ -78,8 +78,8 @@ const SkillRoadmap = () => {
       .then(res => setUser(res.data))
       .catch(err => console.error(err));
 
-   const cachedRoadmap = localStorage.getItem(`skill_roadmap_data_${user?.email}`);
-   const cachedVisibility = localStorage.getItem(`skill_roadmap_visible_${user?.email}`);
+    const cachedRoadmap = localStorage.getItem('skill_roadmap_data');
+    const cachedVisibility = localStorage.getItem('skill_roadmap_visible');
 
     if (cachedRoadmap) {
       setRoadmapData(JSON.parse(cachedRoadmap));
@@ -103,7 +103,7 @@ const SkillRoadmap = () => {
     });
 
     setRoadmapData(newData);
-    localStorage.setItem(`skill_roadmap_data_${user?.email}`, JSON.stringify(newData));
+    localStorage.setItem('skill_roadmap_data', JSON.stringify(newData));
   };
 
   const handleGenerate = async () => {
@@ -170,8 +170,8 @@ const SkillRoadmap = () => {
       setRoadmapData(formatted);
       setShowRoadmap(true);
 
-      localStorage.setItem(`skill_roadmap_data_${user?.email}`, JSON.stringify(formatted));
-      localStorage.setItem(`skill_roadmap_visible_${user?.email}`, 'true');
+      localStorage.setItem('skill_roadmap_data', JSON.stringify(formatted));
+      localStorage.setItem('skill_roadmap_visible', 'true');
 
     } catch (err) {
       console.error(err);
