@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, FileText, Briefcase, Cpu, MessageSquare, Settings, 
   Search, Bell, User, Upload, CheckCircle2, AlertTriangle, ArrowRight, 
   Download, Copy, RefreshCw, X, Zap, ChevronRight, Target, Sparkles,
-  Trophy, TrendingUp, BarChart3, ShieldCheck
+  Trophy, TrendingUp, BarChart3, ShieldCheck, BriefcaseBusiness, ExternalLink,
+  Map
 } from 'lucide-react';
-import Header from '../components/header'
-import Sidebar from '../components/sidebar'
+import Header from '../components/header';
+import Sidebar from '../components/sidebar';
 
 const GlassCard = ({ children, className = "" }) => (
   <motion.div 
@@ -22,6 +24,7 @@ const GlassCard = ({ children, className = "" }) => (
 );
 
 export default function ResumeDashboard() {
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [targetJob, setTargetJob] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -127,8 +130,8 @@ export default function ResumeDashboard() {
               <p className="text-slate-500 mt-2">Extracting semantic insights with LLMs</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-full pb-10">
-              <div className="lg:col-span-1 flex flex-col gap-8">
+            <div className="flex flex-col lg:flex-row gap-6 min-h-full pb-10 items-start">
+              <div className="w-full lg:w-1/3 flex flex-col gap-6">
                 <GlassCard className="relative overflow-hidden border-t-4 border-t-cyan-500/50">
                   <div className="flex items-center justify-between mb-8">
                     <div>
@@ -188,7 +191,7 @@ export default function ResumeDashboard() {
                 </GlassCard>
               </div>
 
-              <div className="lg:col-span-2 flex flex-col gap-8">
+              <div className="w-full lg:w-2/3 flex flex-col gap-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <GlassCard className="border-l-4 border-l-emerald-500/50">
                     <div className="flex items-center gap-3 mb-6">
@@ -228,7 +231,31 @@ export default function ResumeDashboard() {
                     <h3 className="text-lg font-bold text-white flex items-center gap-3">
                       <Sparkles size={20} className="text-cyan-400" /> AI Rewrite Suggestions
                     </h3>
+                    
+                    <div className="flex items-center gap-3">
+                     <motion.button 
+  whileHover={{ scale: 1.02 }}
+  whileTap={{ scale: 0.98 }}
+  onClick={() => navigate("/roadmap")}
+  className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600/20 to-purple-600/20 border border-violet-500/30 text-violet-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:from-violet-600/30 hover:to-purple-600/30 transition-all shadow-lg shadow-violet-900/20"
+>
+  <Map size={14} />
+  Generate Roadmap
+</motion.button>
+
+                     <motion.button 
+  whileHover={{ scale: 1.02 }}
+  whileTap={{ scale: 0.98 }}
+  onClick={() => navigate("/Find_jobs")}
+  className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:from-cyan-600/30 hover:to-blue-600/30 transition-all shadow-lg shadow-cyan-900/20"
+>
+  <BriefcaseBusiness size={14} />
+  View Job Matches
+  <ExternalLink size={12} />
+</motion.button>
+                    </div>
                   </div>
+
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                       <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 relative">
