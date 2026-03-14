@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from "react-router-dom";
-import { 
-  LayoutDashboard, FileText, Briefcase, Cpu, MessageSquare, Settings, 
-  Search, Bell, User, Upload, CheckCircle2, AlertTriangle, ArrowRight, 
+import {
+  LayoutDashboard, FileText, Briefcase, Cpu, MessageSquare, Settings,
+  Search, Bell, User, Upload, CheckCircle2, AlertTriangle, ArrowRight,
   Download, Copy, RefreshCw, X, Zap, ChevronRight, Target, Sparkles,
   Trophy, TrendingUp, BarChart3, ShieldCheck, BriefcaseBusiness, ExternalLink,
   Map
@@ -13,7 +13,7 @@ import Header from '../components/header';
 import Sidebar from '../components/sidebar';
 
 const GlassCard = ({ children, className = "" }) => (
-  <motion.div 
+  <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
@@ -29,6 +29,7 @@ export default function ResumeDashboard() {
   const [targetJob, setTargetJob] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [data, setData] = useState(null);
+  const [score, setScore] = useState(0);
 
   const onUpload = async () => {
     if (!file) return;
@@ -50,6 +51,7 @@ export default function ResumeDashboard() {
         }
       );
       setData(res.data);
+      setScore(res.data.ats_score);
     } catch (err) {
       console.error("Resume analysis error:", err);
     }
@@ -57,23 +59,26 @@ export default function ResumeDashboard() {
   };
 
   const getStatusStyles = (status) => {
-    switch(status) {
-      case "High": return { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", bar: "bg-emerald-500", icon: <Trophy className="text-emerald-400" size={20}/> };
-      case "Medium": return { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", bar: "bg-amber-500", icon: <TrendingUp className="text-amber-400" size={20}/> };
-      default: return { color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/20", bar: "bg-rose-500", icon: <BarChart3 className="text-rose-400" size={20}/> };
+    if (status.includes("Highly") || status.includes("Strong")) {
+      return { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", bar: "bg-emerald-500", icon: <Trophy className="text-emerald-400" size={20} /> };
     }
-  };
 
+    if (status.includes("Moderate")) {
+      return { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", bar: "bg-amber-500", icon: <TrendingUp className="text-amber-400" size={20} /> };
+    }
+
+    return { color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/20", bar: "bg-rose-500", icon: <BarChart3 className="text-rose-400" size={20} /> };
+  };
   return (
     <div className="h-screen max-h-screen bg-[#050b14] flex overflow-hidden font-sans text-slate-200">
       <Sidebar />
-      
+
       <div style={{ marginLeft: "var(--sidebar-width)" }} className="flex flex-col flex-1 min-h-screen relative">
         <div className="absolute top-[-20%] left-[10%] w-[600px] h-[600px] bg-cyan-500/10 blur-[150px] rounded-full pointer-events-none" />
         <div className="absolute bottom-[-20%] right-[10%] w-[500px] h-[500px] bg-violet-600/10 blur-[150px] rounded-full pointer-events-none" />
 
         <main className={`flex-1 p-8 max-w-7xl mx-auto w-full relative z-10 ${data ? 'overflow-y-auto' : 'overflow-hidden'}`}>
-          
+
           {!data && !analyzing ? (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-12 max-w-2xl mx-auto">
               <div className="mb-10 text-center">
@@ -97,7 +102,7 @@ export default function ResumeDashboard() {
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors">
                     <Briefcase size={20} />
                   </div>
-                  <input 
+                  <input
                     type="text"
                     value={targetJob}
                     onChange={(e) => setTargetJob(e.target.value)}
@@ -105,15 +110,14 @@ export default function ResumeDashboard() {
                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-cyan-500/50 focus:bg-white/[0.07] transition-all placeholder:text-slate-600"
                   />
                 </div>
-                
-                <button 
+
+                <button
                   disabled={!file}
                   onClick={onUpload}
-                  className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all ${
-                    file 
-                    ? 'bg-cyan-500 text-[#050b14] hover:bg-cyan-400 shadow-xl shadow-cyan-500/20 active:scale-[0.98]' 
+                  className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all ${file
+                    ? 'bg-cyan-500 text-[#050b14] hover:bg-cyan-400 shadow-xl shadow-cyan-500/20 active:scale-[0.98]'
                     : 'bg-white/5 text-slate-500 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   <Sparkles size={18} />
                   Analyze Profile
@@ -147,12 +151,14 @@ export default function ResumeDashboard() {
                     <div>
                       <div className="flex justify-between items-end mb-2">
                         <span className="text-slate-400 text-sm font-semibold">Match Confidence</span>
-                        <span className={`text-2xl font-black ${getStatusStyles(data.market_readiness).color}`}>84%</span>
+                        <span className={`text-2xl font-black ${getStatusStyles(data.market_readiness).color}`}>
+                          {score}%
+                        </span>
                       </div>
                       <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                        <motion.div 
+                        <motion.div
                           initial={{ width: 0 }}
-                          animate={{ width: '84%' }}
+                          animate={{ width: `${score}%` }}
                           transition={{ duration: 1, ease: "easeOut" }}
                           className={`h-full rounded-full ${getStatusStyles(data.market_readiness).bar}`}
                         />
@@ -164,14 +170,15 @@ export default function ResumeDashboard() {
                       <div>
                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Status</p>
                         <p className={`font-bold text-lg ${getStatusStyles(data.market_readiness).color}`}>
-                          {data.market_readiness} Alignment
+                          {data.market_readiness}
                         </p>
                       </div>
                     </div>
 
                     <div className="pt-4 border-t border-white/5">
                       <p className="text-xs text-slate-400 leading-relaxed italic">
-                        "Your profile shows strong technical alignment with {targetJob || 'the role'}. Improving the identified gaps could elevate you to the top tier of candidates."
+                        Your profile was analyzed against the role: {targetJob}.
+                        Addressing the identified gaps could significantly increase your market readiness.
                       </p>
                     </div>
                   </div>
@@ -231,28 +238,36 @@ export default function ResumeDashboard() {
                     <h3 className="text-lg font-bold text-white flex items-center gap-3">
                       <Sparkles size={20} className="text-cyan-400" /> AI Rewrite Suggestions
                     </h3>
-                    
-                    <div className="flex items-center gap-3">
-                     <motion.button 
-  whileHover={{ scale: 1.02 }}
-  whileTap={{ scale: 0.98 }}
-  onClick={() => navigate("/roadmap")}
-  className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600/20 to-purple-600/20 border border-violet-500/30 text-violet-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:from-violet-600/30 hover:to-purple-600/30 transition-all shadow-lg shadow-violet-900/20"
->
-  <Map size={14} />
-  Generate Roadmap
-</motion.button>
 
-                     <motion.button 
-  whileHover={{ scale: 1.02 }}
-  whileTap={{ scale: 0.98 }}
-  onClick={() => navigate("/Find_jobs")}
-  className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:from-cyan-600/30 hover:to-blue-600/30 transition-all shadow-lg shadow-cyan-900/20"
->
-  <BriefcaseBusiness size={14} />
-  View Job Matches
-  <ExternalLink size={12} />
-</motion.button>
+                    <div className="flex items-center gap-3">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() =>
+                          navigate("/roadmap", {
+                            state: { role: targetJob }
+                          })
+                        }
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600/20 to-purple-600/20 border border-violet-500/30 text-violet-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:from-violet-600/30 hover:to-purple-600/30 transition-all shadow-lg shadow-violet-900/20"
+                      >
+                        <Map size={14} />
+                        Generate Roadmap
+                      </motion.button>
+
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() =>
+                          navigate("/Find_jobs", {
+                            state: { jobTitle: targetJob }
+                          })
+                        }
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:from-cyan-600/30 hover:to-blue-600/30 transition-all shadow-lg shadow-cyan-900/20"
+                      >
+                        <BriefcaseBusiness size={14} />
+                        View Job Matches
+                        <ExternalLink size={12} />
+                      </motion.button>
                     </div>
                   </div>
 
@@ -260,11 +275,11 @@ export default function ResumeDashboard() {
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                       <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 relative">
                         <span className="absolute -top-3 left-4 px-2 py-0.5 bg-[#0a111e] text-[10px] font-black text-slate-500 uppercase border border-white/5 rounded">Draft</span>
-                        <p className="text-sm text-slate-500 italic leading-relaxed">"Worked on the React front-end and fixed various performance bugs."</p>
+                        <p className="text-sm text-slate-500 italic leading-relaxed">{data.weak_line}</p>
                       </div>
                       <div className="p-5 rounded-2xl bg-cyan-500/[0.03] border border-cyan-500/20 relative">
                         <span className="absolute -top-3 left-4 px-2 py-0.5 bg-[#0a111e] text-[10px] font-black text-cyan-400 uppercase border border-cyan-500/20 rounded tracking-tighter">Optimized</span>
-                        <p className="text-sm text-white font-medium leading-relaxed">"Architected a scalable React front-end, implementing code-splitting and memoization to reduce TTI by 40%."</p>
+                        <p className="text-sm text-white font-medium leading-relaxed">{data.suggestions}</p>
                       </div>
                     </div>
                     <div className="flex gap-4">

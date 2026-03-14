@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import {
   Search,
@@ -13,12 +14,12 @@ import {
 import Sidebar from "../components/sidebar";
 
 const FindJobs = () => {
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
-
   const [searchQuery, setSearchQuery] = useState({
-    query: "",
+    query: location.state?.jobTitle || "",
     location: "",
     experience: "Intermediate",
     sources: ["linkedin", "naukri", "web"],
@@ -31,7 +32,11 @@ const FindJobs = () => {
   ];
 
   useEffect(() => {
-    fetchJobs();
+    if (location.state?.jobTitle) {
+      handleSearch(new Event("submit"));
+    } else {
+      fetchJobs();
+    }
   }, []);
 
   const fetchJobs = async () => {
@@ -188,18 +193,16 @@ const FindJobs = () => {
                   key={source.id}
                   onClick={() => toggleSource(source.id)}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all flex items-center gap-2
-                  ${
-                    searchQuery.sources.includes(source.id)
+                  ${searchQuery.sources.includes(source.id)
                       ? "bg-white/10 border-white/20 text-white"
                       : "bg-transparent border-white/5 text-slate-500 hover:border-white/10"
-                  }`}
+                    }`}
                 >
                   <div
-                    className={`w-2 h-2 rounded-full ${
-                      searchQuery.sources.includes(source.id)
-                        ? source.color
-                        : "bg-slate-600"
-                    }`}
+                    className={`w-2 h-2 rounded-full ${searchQuery.sources.includes(source.id)
+                      ? source.color
+                      : "bg-slate-600"
+                      }`}
                   />
                   {source.label}
                 </button>
