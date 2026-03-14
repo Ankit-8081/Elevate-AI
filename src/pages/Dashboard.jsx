@@ -225,15 +225,12 @@ export default function CareerDashboard() {
                 </h3>
                 <div className="space-y-6">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <span className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">
                       {milestone?.stage || "No Roadmap"}
+                      
                     </span>
 
-                    <div className="p-3 bg-white/5 rounded-xl border border-white/5 text-[11px] text-slate-400">
-                      Complete <span className="text-blue-400 font-medium">
-                        {milestone?.skill || "Generate a roadmap"}
-                      </span> to progress your roadmap.
-                    </div>
+                    <br />
                     <div className="text-[10px] text-slate-400 mb-1">
                       {progress}% Complete
                     </div>
@@ -244,6 +241,12 @@ export default function CareerDashboard() {
                         transition={{ duration: 1.2 }}
                         className="h-full bg-blue-500 rounded-full"
                       />
+                    </div>
+                    <br />
+                    <div className="p-3 bg-white/5 rounded-xl border border-white/5 text-[11px] text-slate-400">
+                      Complete <span className="text-blue-400 font-medium">
+                        {milestone?.skill || "Generate a roadmap"}
+                      </span> to progress your roadmap.
                     </div>
                   </div>
 
