@@ -18,7 +18,7 @@ def ask_bot(user_email: str, message: str):
 
     # fetch user profile
     cursor.execute(
-        "SELECT name, market_readiness, skills FROM users WHERE email = ?",
+        "SELECT username, market_readiness, skills FROM users WHERE email = ?",
         (user_email,)
     )
 

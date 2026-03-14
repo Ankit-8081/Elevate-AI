@@ -47,12 +47,14 @@ RESUME_DIR = "resume"
 os.makedirs(RESUME_DIR, exist_ok=True)
 
 class MarketReadiness(BaseModel):
-    key_strengths: List[str] = Field(description="Top strengths")
-    critical_gaps: List[str] = Field(description="Major missing qualifications")
-    missing_keywords: List[str] = Field(description="Missing ATS keywords")
-    ai_suggestion: str = Field(description="Strategic advice")
-    market_readiness: str = Field(description="High, Medium, or Low readiness")
-    skills: List[str] = Field(description="List of technical skills extracted from the resume")
+    key_strengths: List[str]
+    critical_gaps: List[str]
+    missing_keywords: List[str]
+    ai_suggestion: str
+    market_readiness: str
+    skills: List[str]
+    projects: List[str] = Field(description="List of projects found in resume")
+    certifications: List[str] = Field(description="Certifications found in resume")
 
 class RoadmapRequest(BaseModel):
     topic: str
@@ -88,20 +90,25 @@ async def analyze_resume(pdf_bytes: bytes, target_role: str):
 Analyze this resume for the role: {target_role}.
 
 Return:
-- key strengths
-- critical gaps
-- missing keywords
-- extracted technical skills
-- a short improvement suggestion
 
-Also determine the candidate's market readiness.
+1. key strengths
+2. critical gaps
+3. missing keywords
+4. extracted technical skills
+5. projects mentioned in resume
+6. certifications mentioned in resume
+7. improvement suggestion
+8. market readiness
 
 Market readiness must be:
 High → strong match
 Medium → partially aligned
 Low → major skill gaps
 
-Extract **5–10 core technical skills from the resume**.
+Extract:
+- 5–10 technical skills
+- All projects mentioned
+- All certifications mentioned
 """},
             {
                 "type": "media",
@@ -131,23 +138,25 @@ def init_db():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        username TEXT,
-        email TEXT UNIQUE,
-        password TEXT,
-        phone TEXT,
-        bio TEXT,
-        linkedin TEXT,
-        current_role TEXT,
-        target_role TEXT,
-        professional_links TEXT,
-        profile_image TEXT,
-        cover_image TEXT,
-        market_readiness TEXT,
-        skills TEXT,
-        resume TEXT
-    )
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    username TEXT,
+    email TEXT UNIQUE,
+    password TEXT,
+    phone TEXT,
+    bio TEXT,
+    linkedin TEXT,
+    current_role TEXT,
+    target_role TEXT,
+    professional_links TEXT,
+    profile_image TEXT,
+    cover_image TEXT,
+    market_readiness TEXT,
+    skills TEXT,
+    projects TEXT,
+    certifications TEXT,
+    resume TEXT
+)
     """)
 
     conn.commit()
@@ -236,8 +245,33 @@ def signup(data: SignupRequest):
     hashed = hash_password(data.password)
 
     cursor.execute(
-        "INSERT INTO users (username, linkedin, email, password) VALUES (?, ?, ?, ?)",
-        (data.name, data.linkedin, data.email, hashed)
+        """
+        INSERT INTO users (
+            name,
+            username,
+            linkedin,
+            email,
+            password,
+            phone,
+            bio,
+            current_role,
+            target_role,
+            professional_links
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            data.name,
+            data.name,
+            data.linkedin,
+            data.email,
+            hashed,
+            "",
+            "",
+            "",
+            "",
+            json.dumps([])
+        )
     )
 
     conn.commit()
@@ -337,7 +371,9 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         "resume": user["resume"],
         "professional_links": json.loads(user["professional_links"]) if user["professional_links"] else [],
         "market_readiness": user["market_readiness"],
-        "skills": json.loads(user["skills"]) if user["skills"] else []
+        "skills": json.loads(user["skills"]) if user["skills"] else [],
+        "projects": json.loads(user["projects"]) if user["projects"] else [],
+        "certifications": json.loads(user["certifications"]) if user["certifications"] else []
     }
 
 
@@ -486,9 +522,22 @@ async def analyze_uploaded_resume(
         cursor = conn.cursor()
 
         cursor.execute(
-            "UPDATE users SET market_readiness = ?, skills = ? WHERE email = ?",
-            (report["market_readiness"], json.dumps(report["skills"]), email)
-        )
+                    """
+                    UPDATE users
+                    SET market_readiness = ?,
+                        skills = ?,
+                        projects = ?,
+                        certifications = ?
+                    WHERE email = ?
+                    """,
+                    (
+                        report["market_readiness"],
+                        json.dumps(report["skills"]),
+                        json.dumps(report["projects"]),
+                        json.dumps(report["certifications"]),
+                        email
+                    )
+                )
 
         conn.commit()
         conn.close()

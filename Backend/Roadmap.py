@@ -163,11 +163,3 @@ Rules:
         return self.generate_roadmap(corrected_topic, experience_level, learning_style, upper_limit)
 
  
-R = Roadmap()
-result = R.get_roadmap(
-    topic="Carpenter",
-    experience_level="Intermediate",
-    learning_style="Project-Based",
-    upper_limit=3
-)
-print(result)

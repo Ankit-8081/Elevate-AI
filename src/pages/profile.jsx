@@ -68,13 +68,35 @@ const EditableInput = ({ label, value, setValue, icon: Icon, type = "text", disa
   );
 };
 
-const StatsPanel = () => {
+const StatsPanel = ({ projects, skills, certifications }) => {
+
   const stats = [
-    { label: 'Projects Built', value: '07', borderColor: 'border-l-amber-500', shadow: 'shadow-amber-500/10' },
-    { label: 'Modules Completed', value: '21', borderColor: 'border-l-purple-500', shadow: 'shadow-purple-500/10' },
-    { label: 'Skills Mastered', value: '18', borderColor: 'border-l-emerald-500', shadow: 'shadow-emerald-500/10' },
-    { label: 'Certifications', value: '03', borderColor: 'border-l-pink-500', shadow: 'shadow-pink-500/10' },
+    {
+      label: "Projects Built",
+      value: projects?.length || 0,
+      borderColor: "border-l-amber-500",
+      shadow: "shadow-amber-500/10"
+    },
+    {
+      label: "Modules Completed",
+      value: skills?.length || 0, // you can map modules to skills count
+      borderColor: "border-l-purple-500",
+      shadow: "shadow-purple-500/10"
+    },
+    {
+      label: "Skills Mastered",
+      value: skills?.length || 0,
+      borderColor: "border-l-emerald-500",
+      shadow: "shadow-emerald-500/10"
+    },
+    {
+      label: "Certifications",
+      value: certifications?.length || 0,
+      borderColor: "border-l-pink-500",
+      shadow: "shadow-pink-500/10"
+    }
   ];
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
       {stats.map((stat, i) => (
@@ -82,7 +104,9 @@ const StatsPanel = () => {
           key={i}
           className={`flex flex-col items-center justify-center py-5 border-l-4 ${stat.borderColor} ${stat.shadow} hover:scale-[1.02] transition-transform cursor-default`}
         >
-          <span className="text-2xl font-black text-white tracking-tight">{stat.value}</span>
+          <span className="text-2xl font-black text-white tracking-tight">
+            {stat.value}
+          </span>
           <span className="text-[10px] text-gray-500 uppercase font-bold tracking-[0.12em] mt-1.5">
             {stat.label}
           </span>
@@ -126,9 +150,8 @@ const ProfessionalLinks = ({ links, setLinks }) => {
             value={getUrl("linkedin")}
             onChange={(e) => updateLink("linkedin", e.target.value)}
             placeholder="LinkedIn Profile URL"
-            className={`w-full bg-black/20 border ${
-              editing.linkedin ? "border-blue-500/50" : "border-white/5"
-            } rounded-xl py-2.5 pl-10 pr-12 text-gray-300 disabled:opacity-60`}
+            className={`w-full bg-black/20 border ${editing.linkedin ? "border-blue-500/50" : "border-white/5"
+              } rounded-xl py-2.5 pl-10 pr-12 text-gray-300 disabled:opacity-60`}
           />
 
           <button
@@ -156,9 +179,8 @@ const ProfessionalLinks = ({ links, setLinks }) => {
             value={getUrl("portfolio")}
             onChange={(e) => updateLink("portfolio", e.target.value)}
             placeholder="Portfolio Website URL"
-            className={`w-full bg-black/20 border ${
-              editing.portfolio ? "border-blue-500/50" : "border-white/5"
-            } rounded-xl py-2.5 pl-10 pr-12 text-gray-300 disabled:opacity-60`}
+            className={`w-full bg-black/20 border ${editing.portfolio ? "border-blue-500/50" : "border-white/5"
+              } rounded-xl py-2.5 pl-10 pr-12 text-gray-300 disabled:opacity-60`}
           />
 
           <button
@@ -227,25 +249,25 @@ const ProfilePage = () => {
   }, []);
 
   const saveProfile = async () => {
-  const token = localStorage.getItem("token");
-  setSaving(true);
+    const token = localStorage.getItem("token");
+    setSaving(true);
 
-  try {
-    await axios.post(
-      `${API_BASE}/profile/update`,
-      { name, username, phone, bio, current_role, target_role, professional_links: links },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    try {
+      await axios.post(
+        `${API_BASE}/profile/update`,
+        { name, username, phone, bio, current_role, target_role, professional_links: links },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
 
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setSaving(false);
-  }
-};
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const uploadFile = async (file, endpoint, setter) => {
     const token = localStorage.getItem("token");
@@ -308,16 +330,16 @@ const ProfilePage = () => {
               <div className="relative group">
                 <div className="w-32 h-32 rounded-3xl overflow-hidden border-4 border-[#050b14] shadow-2xl bg-gray-800 flex items-center justify-center">
                   {image ? (
-  <img
-    src={`http://127.0.0.1:8000${image}`}
-    className="w-full h-full object-cover"
-    loading="lazy"
-  />
-) : (
-  <span className="text-3xl font-bold text-gray-400">
-    {username?.charAt(0)?.toUpperCase() || "U"}
-  </span>
-)}
+                    <img
+                      src={`http://127.0.0.1:8000${image}`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span className="text-3xl font-bold text-gray-400">
+                      {username?.charAt(0)?.toUpperCase() || "U"}
+                    </span>
+                  )}
                 </div>
                 <button onClick={() => profileInputRef.current?.click()} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-3xl">
                   <Camera className="text-white" />
@@ -343,7 +365,11 @@ const ProfilePage = () => {
 
           <div className="mt-28 grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-8 space-y-6">
-              <StatsPanel />
+              <StatsPanel
+                projects={user?.projects}
+                skills={user?.skills}
+                certifications={user?.certifications}
+              />
 
               <GlassCard>
                 <SectionHeader icon={User} title="Personal Information" />
@@ -474,23 +500,23 @@ const ProfilePage = () => {
         ::-webkit-scrollbar-thumb:hover { background: #334155; }
       `}</style>
       <AnimatePresence>
-  {showSuccess && (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 40 }}
-      className="fixed bottom-24 right-8 bg-[#0f172a] border border-green-500/30 text-green-400 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50"
-    >
-      <Check size={20} className="text-green-400" />
-      <div>
-        <p className="font-semibold text-sm">Profile Saved</p>
-        <p className="text-xs text-gray-400">
-          Your profile has been updated successfully.
-        </p>
-      </div>
-    </motion.div>
-  )}
-</AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            className="fixed bottom-24 right-8 bg-[#0f172a] border border-green-500/30 text-green-400 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50"
+          >
+            <Check size={20} className="text-green-400" />
+            <div>
+              <p className="font-semibold text-sm">Profile Saved</p>
+              <p className="text-xs text-gray-400">
+                Your profile has been updated successfully.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
