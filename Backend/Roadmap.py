@@ -7,11 +7,12 @@ from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage , SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_tavily import TavilySearch
 load_dotenv()
 
 class Concept(BaseModel):
-    title: str = Field(..., description="The name of a specific, technical concept")
+    title: str = Field(..., description="The name of a specific concept")
     toughness:Literal['Easy','Medium','Hard'] = Field(...,description="Toughness level of the technical concept")
     learning_link: str | None = None # This will be filled by Tavily
     search_query: str = Field(..., description="A specific search query to find a tutorial for this concept")
@@ -25,7 +26,7 @@ class LearningRoadmap(BaseModel):
     advanced: List[Concept] = Field(..., description="Specialized, high-scale, or research-level concepts")
 
 class TopicValidation(BaseModel):
-    is_technical: bool = Field(..., description="Whether the topic is a valid technical or professional domain.")
+    is_technical: bool = Field(..., description="Whether the topic is a valid professional domain.")
     corrected_topic: str = Field(..., description="The corrected version of the topic (fixing typos) or a 'N/A'.")
     reason: str = Field(..., description="A short reason why the topic was accepted or rejected.")
 
@@ -41,14 +42,41 @@ class Roadmap:
         validator_llm = self.llm.with_structured_output(TopicValidation)
         
         system_msg = (
-    "You are a Technical Domain Verifier. Your only job is to decide if an input "
-    "is a field one can study or work in professionally. "
-    "\n\nVALID EXAMPLES: 'Software Engineering', 'Python', 'Data Science', 'React', 'DevOps', 'Project Management'."
-    "\nINVALID EXAMPLES: 'how to eat', 'I am bored', 'random gibberish', 'asdfghjkl'."
-    "\n\nRULES:"
-    "\n1. If it is a professional or technical field, set is_technical = True."
-    "\n2. Fix minor typos (e.g., 'pythn' -> 'Python')."
-    "\n3. Be lenient: if it's even remotely related to technology, engineering, or professional skills, accept it."
+    """You are a **Professional Domain Validator**.
+Your task is to determine whether a user's input represents a **real profession, career path, academic field, or technical domain** that someone can realistically study or work in.
+
+A VALID domain is something that can reasonably have:
+
+* a career path
+* professional training
+* a learning roadmap
+
+Examples of VALID inputs:
+
+* "AI Engineer"
+* "Electrician"
+* "Carpenter"
+* "Cybersecurity"
+* "Product Management"
+* "Machine Learning"
+* "VLSI Design"
+* "Data Science"
+* "Game Development"
+Examples of INVALID inputs:
+* "how to eat"
+* "I am bored"
+* "random words"
+* "asdfghjkl"
+* "tell me a joke"
+* "weather today"
+Rules:
+1. If the input represents a **profession, academic discipline, trade skill, or technical field**, set `is_technical = true`.
+2. If the input is **not a field someone can build a career in**, set `is_technical = false`.
+3. If the input contains **minor spelling mistakes**, correct them.
+4. If the input is **already correct**, return it unchanged.
+5. Do NOT invent or expand the topic unnecessarily. Only correct spelling or obvious formatting.
+6. If the input is a **sentence, question, or unrelated phrase**, reject it.
+"""
 )
         
         llm = ChatGroq(model="llama-3.1-8b-instant",api_key=os.getenv("GROQ_API_KEY")) #using lighter model in less workforce step for less cost 
@@ -134,4 +162,12 @@ class Roadmap:
 
         return self.generate_roadmap(corrected_topic, experience_level, learning_style, upper_limit)
 
-
+ 
+R = Roadmap()
+result = R.get_roadmap(
+    topic="Carpenter",
+    experience_level="Intermediate",
+    learning_style="Project-Based",
+    upper_limit=3
+)
+print(result)

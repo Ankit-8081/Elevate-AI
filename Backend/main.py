@@ -32,6 +32,7 @@ from web_scraping import LinkedInScraper, NaukriScraper, SerpApiScraper
 app = FastAPI()
 roadmap_engine = Roadmap()
 app.mount("/images", StaticFiles(directory="profile_images"), name="images")
+app.mount("/resume", StaticFiles(directory="resume"), name="resume")
 load_dotenv()
 
 llm = ChatGoogleGenerativeAI(
@@ -42,6 +43,8 @@ llm = ChatGoogleGenerativeAI(
 
 PROFILE_DIR = "profile_images"
 os.makedirs(PROFILE_DIR, exist_ok=True)
+RESUME_DIR = "resume"
+os.makedirs(RESUME_DIR, exist_ok=True)
 
 class MarketReadiness(BaseModel):
     key_strengths: List[str] = Field(description="Top strengths")
@@ -142,7 +145,8 @@ def init_db():
         profile_image TEXT,
         cover_image TEXT,
         market_readiness TEXT,
-        skills TEXT
+        skills TEXT,
+        resume TEXT
     )
     """)
 
@@ -330,6 +334,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         "target_role": user["target_role"],
         "profile_image": user["profile_image"],
         "cover_image": user["cover_image"],
+        "resume": user["resume"],
         "professional_links": json.loads(user["professional_links"]) if user["professional_links"] else [],
         "market_readiness": user["market_readiness"],
         "skills": json.loads(user["skills"]) if user["skills"] else []
@@ -447,7 +452,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 @app.post("/upload-resume")
-async def upload_resume(
+async def analyze_uploaded_resume(
     file: UploadFile = File(...),
     target_job: str = Form(...),
     credentials: HTTPAuthorizationCredentials = Depends(security)
@@ -605,6 +610,36 @@ def start_interview(data: InterviewStart):
         "question": question
     }
 
+@app.post("/profile/upload-resume")
+async def upload_resume(
+    file: UploadFile = File(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+
+    token = credentials.credentials
+    email = verify_token(token)
+
+    ext = file.filename.split(".")[-1]
+    filename = f"{uuid.uuid4()}.{ext}"
+    path = os.path.join(RESUME_DIR, filename)
+
+    contents = await file.read()
+
+    with open(path, "wb") as f:
+        f.write(contents)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE users SET resume=? WHERE email=?",
+        (f"/resume/{filename}", email)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return {"resume": f"/resume/{filename}"}
 
 @app.post("/interview/submit")
 def submit_answer(data: InterviewAnswer):
