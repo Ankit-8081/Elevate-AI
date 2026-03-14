@@ -10,3 +10,4 @@ urllib
 langchain-google-genai
 pdf2image
 langchain_tavily
+pypdf

@@ -7,13 +7,11 @@ from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from typing import List
 import sqlite3
-import shutil
 import uuid
 import os
-import whisper
 import json
 
-
+from agentic_workflow.resume_builder_agent.main import generate_resume
 import base64
 from Roadmap import Roadmap
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -32,7 +30,7 @@ from web_scraping import LinkedInScraper, NaukriScraper, SerpApiScraper
 app = FastAPI()
 roadmap_engine = Roadmap()
 app.mount("/images", StaticFiles(directory="profile_images"), name="images")
-app.mount("/resume", StaticFiles(directory="resume"), name="resume")
+app.mount("/resume-files", StaticFiles(directory="resume"), name="resume-files")
 load_dotenv()
 
 llm = ChatGoogleGenerativeAI(
@@ -200,6 +198,9 @@ class ChatRequest(BaseModel):
 class SaveRoadmap(BaseModel):
     roadmap: list
 
+class ResumeGenerateRequest(BaseModel):
+    session_id: str
+    resume_data: dict
 
 # ---------------- PASSWORD UTILS ---------------- #
 
@@ -704,6 +705,24 @@ def get_next_milestone(roadmap):
                 }
 
     return None
+
+@app.post("/resume/generate")
+def generate_resume_api(
+    data: ResumeGenerateRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    try:
+        verify_token(credentials.credentials)
+
+        html_resume = generate_resume(
+            session_id=data.session_id,
+            resume_data=data.resume_data
+        )
+
+        return {"html": html_resume}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/profile/upload-resume")
 async def upload_resume(

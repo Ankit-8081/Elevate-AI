@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import axios from "axios";
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, Mail, Phone, MapPin, Linkedin, Github, Globe,
@@ -61,7 +62,7 @@ export default function ResumeBuilder() {
   const [contactInfo, setContactInfo] = useState({
     fullName: '', email: '', phone: '', location: '', linkedin: '', github: '', portfolio: ''
   });
-  
+
   const [summary, setSummary] = useState('');
   const [skills, setSkills] = useState([]);
   const [skillInput, setSkillInput] = useState('');
@@ -74,6 +75,7 @@ export default function ResumeBuilder() {
   const [languages, setLanguages] = useState([]);
   const [languageInput, setLanguageInput] = useState('');
   const [resumeHTML, setResumeHTML] = useState('');
+  const [user, setUser] = useState(null);
 
   const isResumeValid =
     contactInfo.fullName.trim() &&
@@ -93,6 +95,20 @@ export default function ResumeBuilder() {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [messages]);
+  useEffect(() => {
+
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  axios.get("http://127.0.0.1:8000/me", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  .then(res => setUser(res.data))
+  .catch(err => console.error(err));
+
+}, []);
 
   const addArrayItem = (setter, item) => {
     setter(prev => [...prev, item]);
@@ -106,90 +122,43 @@ export default function ResumeBuilder() {
     setter(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleCompile = () => {
-    const mockHTML = `
-      <div id="resume-content" style="font-family: 'Inter', Helvetica, Arial, sans-serif; color: #1a1a1a; width: 100%; min-height: 29.7cm; margin: 0 auto; padding: 1.5cm; background: #ffffff; box-sizing: border-box;">
-        <div style="text-align: center; margin-bottom: 24px;">
-          <h1 style="font-size: 28px; margin: 0 0 8px 0; color: #111; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">${contactInfo.fullName || 'Your Name'}</h1>
-          <div style="font-size: 13px; color: #444; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
-            ${contactInfo.email ? `<span>${contactInfo.email}</span>` : ''}
-            ${contactInfo.phone ? `<span>• ${contactInfo.phone}</span>` : ''}
-            ${contactInfo.location ? `<span>• ${contactInfo.location}</span>` : ''}
-            ${contactInfo.linkedin ? `<span>• ${contactInfo.linkedin}</span>` : ''}
-            ${contactInfo.github ? `<span>• ${contactInfo.github}</span>` : ''}
-            ${contactInfo.portfolio ? `<span>• ${contactInfo.portfolio}</span>` : ''}
-          </div>
-        </div>
-        
-        ${summary ? `
-          <div style="margin-bottom: 20px;">
-            <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #111; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin: 0 0 8px 0;">Professional Summary</h2>
-            <p style="font-size: 13px; line-height: 1.5; margin: 0;">${summary}</p>
-          </div>
-        ` : ''}
+  const handleCompile = async () => {
 
-        ${experience.length > 0 ? `
-          <div style="margin-bottom: 20px;">
-            <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #111; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin: 0 0 12px 0;">Experience</h2>
-            ${experience.map(exp => `
-              <div style="margin-bottom: 16px;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px;">
-                  <h3 style="font-size: 14px; margin: 0; color: #111; font-weight: 600;">${exp.title || 'Role'}</h3>
-                  <span style="font-size: 12px; color: #666; font-weight: 500;">${exp.startDate || ''} - ${exp.endDate || 'Present'}</span>
-                </div>
-                <div style="font-size: 13px; color: #444; margin-bottom: 6px; font-weight: 500;">${exp.company || 'Company'}</div>
-                <p style="font-size: 13px; line-height: 1.5; margin: 0; color: #333;">${exp.description || ''}</p>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
+    const token = localStorage.getItem("token")
 
-        ${projects.length > 0 ? `
-          <div style="margin-bottom: 20px;">
-            <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #111; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin: 0 0 12px 0;">Projects</h2>
-            ${projects.map(proj => `
-              <div style="margin-bottom: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px;">
-                  <h3 style="font-size: 14px; margin: 0; color: #111; font-weight: 600;">${proj.name || 'Project Name'}</h3>
-                  <span style="font-size: 12px; color: #666;">
-                    ${proj.github ? `<a href="${proj.github}" style="color: #666; text-decoration: none;">GitHub</a>` : ''}
-                    ${proj.live ? ` | <a href="${proj.live}" style="color: #666; text-decoration: none;">Live</a>` : ''}
-                  </span>
-                </div>
-                <div style="font-size: 12px; color: #666; font-style: italic; margin-bottom: 4px;">${proj.tech || ''}</div>
-                <p style="font-size: 13px; line-height: 1.5; margin: 0;">${proj.description || ''}</p>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
+    const resumeData = {
+      contact: contactInfo,
+      summary,
+      skills,
+      experience,
+      projects,
+      education,
+      certifications,
+      achievements,
+      languages
+    }
 
-        ${education.length > 0 ? `
-          <div style="margin-bottom: 20px;">
-            <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #111; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin: 0 0 12px 0;">Education</h2>
-            ${education.map(edu => `
-              <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: baseline;">
-                <div>
-                  <h3 style="font-size: 14px; margin: 0 0 2px 0; color: #111; font-weight: 600;">${edu.institution || 'Institution'}</h3>
-                  <div style="font-size: 13px; color: #444;">${edu.degree || 'Degree'} ${edu.gpa ? `• GPA: ${edu.gpa}` : ''}</div>
-                </div>
-                <span style="font-size: 12px; color: #666; font-weight: 500;">${edu.startYear || ''} - ${edu.endYear || ''}</span>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
+    try {
 
-        ${skills.length > 0 ? `
-          <div style="margin-bottom: 20px;">
-            <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #111; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin: 0 0 8px 0;">Skills</h2>
-            <div style="font-size: 13px; line-height: 1.5; color: #333;">
-              ${skills.join(' • ')}
-            </div>
-          </div>
-        ` : ''}
-      </div>
-    `;
-    setResumeHTML(mockHTML);
-    setStage(2);
+      const res = await axios.post(
+        "http://127.0.0.1:8000/resume/generate",
+        {
+          session_id: user ? user.email : "session1",
+          resume_data: resumeData
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
+
+      setResumeHTML(res.data.html)
+      setStage(2)
+
+    } catch (err) {
+      console.error(err)
+    }
   };
 
   const handleDownload = () => {
@@ -211,20 +180,54 @@ export default function ResumeBuilder() {
     element.click();
   };
 
-  const handleChatCompile = () => {
-    if (!chatInput.trim()) return;
-    setMessages(prev => [...prev, { role: 'user', content: chatInput }]);
-    const currentInput = chatInput;
-    setChatInput('');
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'ai', content: `I've updated your resume based on: "${currentInput}". The preview has been refreshed.` }]);
-      setResumeHTML(prev => prev.replace(
-        '</div>',
-        `<div style="margin-top: 16px; padding: 12px; background: #f8fafc; border-left: 4px solid #3b82f6; font-size: 13px; font-family: sans-serif;">
-          ✨ AI Update applied: ${currentInput}
-        </div></div>`
-      ));
-    }, 1000);
+  const handleChatCompile = async () => {
+
+    if (!chatInput.trim()) return
+
+    const token = localStorage.getItem("token")
+
+    setMessages(prev => [...prev, { role: "user", content: chatInput }])
+
+    const resumeData = {
+      contact: contactInfo,
+      summary,
+      skills,
+      experience,
+      projects,
+      education,
+      certifications,
+      achievements,
+      languages,
+      instruction: chatInput
+    }
+
+    try {
+
+      const res = await axios.post(
+        "http://127.0.0.1:8000/resume/generate",
+        {
+          session_id: user?.email || "session1",
+          resume_data: resumeData
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
+
+      setResumeHTML(res.data.html)
+
+      setMessages(prev => [
+        ...prev,
+        { role: "ai", content: "Resume updated successfully." }
+      ])
+
+    } catch (err) {
+      console.error(err)
+    }
+
+    setChatInput("")
   };
 
   return (
@@ -251,14 +254,14 @@ export default function ResumeBuilder() {
 
                 <Card title="Contact Information" icon={User}>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input required label="Full Name" value={contactInfo.fullName} onChange={e => setContactInfo({...contactInfo, fullName: e.target.value})} placeholder="Jane Doe" />
-                    <Input required label="Email Address" type="email" value={contactInfo.email} onChange={e => setContactInfo({...contactInfo, email: e.target.value})} placeholder="jane@example.com" />
-                    <Input required label="Phone Number" value={contactInfo.phone} onChange={e => setContactInfo({...contactInfo, phone: e.target.value})} placeholder="+1 555 000 000" />
-                    <Input label="Location" value={contactInfo.location} onChange={e => setContactInfo({...contactInfo, location: e.target.value})} placeholder="San Francisco, CA" />
-                    <Input label="LinkedIn URL" value={contactInfo.linkedin} onChange={e => setContactInfo({...contactInfo, linkedin: e.target.value})} placeholder="linkedin.com/in/janedoe" />
-                    <Input label="GitHub URL" value={contactInfo.github} onChange={e => setContactInfo({...contactInfo, github: e.target.value})} placeholder="github.com/janedoe" />
+                    <Input required label="Full Name" value={contactInfo.fullName} onChange={e => setContactInfo({ ...contactInfo, fullName: e.target.value })} placeholder="Jane Doe" />
+                    <Input required label="Email Address" type="email" value={contactInfo.email} onChange={e => setContactInfo({ ...contactInfo, email: e.target.value })} placeholder="jane@example.com" />
+                    <Input required label="Phone Number" value={contactInfo.phone} onChange={e => setContactInfo({ ...contactInfo, phone: e.target.value })} placeholder="+1 555 000 000" />
+                    <Input label="Location" value={contactInfo.location} onChange={e => setContactInfo({ ...contactInfo, location: e.target.value })} placeholder="San Francisco, CA" />
+                    <Input label="LinkedIn URL" value={contactInfo.linkedin} onChange={e => setContactInfo({ ...contactInfo, linkedin: e.target.value })} placeholder="linkedin.com/in/janedoe" />
+                    <Input label="GitHub URL" value={contactInfo.github} onChange={e => setContactInfo({ ...contactInfo, github: e.target.value })} placeholder="github.com/janedoe" />
                     <div className="md:col-span-3">
-                      <Input label="Portfolio Website" value={contactInfo.portfolio} onChange={e => setContactInfo({...contactInfo, portfolio: e.target.value})} placeholder="janedoe.com" />
+                      <Input label="Portfolio Website" value={contactInfo.portfolio} onChange={e => setContactInfo({ ...contactInfo, portfolio: e.target.value })} placeholder="janedoe.com" />
                     </div>
                   </div>
                 </Card>
@@ -272,8 +275,8 @@ export default function ResumeBuilder() {
                     <div className="flex flex-col gap-3">
                       <div className="flex gap-2">
                         <div className="flex-1">
-                          <Input 
-                            placeholder="e.g. React.js, Python, AWS" 
+                          <Input
+                            placeholder="e.g. React.js, Python, AWS"
                             value={skillInput}
                             onChange={e => setSkillInput(e.target.value)}
                             onKeyDown={e => {
@@ -482,7 +485,8 @@ export default function ResumeBuilder() {
           </AnimatePresence>
         </div>
       </main>
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
