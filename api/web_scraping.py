@@ -128,6 +128,6 @@ if __name__ == "__main__":
     li_scraper = LinkedInScraper()
     print("LinkedIn Results:", li_scraper.fetch_jobs("Developer", "New York"))
     nu_scraper = NaukriScraper()
-    print("Naukri Scraper :" , nu_scraper.fetch_jobs("AI Engineering","Delhi"))
+    #print("Naukri Scraper :" , nu_scraper.fetch_jobs("AI Engineering","Delhi"))
     serp_scraper = SerpApiScraper()
     print("SerpApi Results:", serp_scraper.fetch_jobs("Backend Developer", "Delhi"))
