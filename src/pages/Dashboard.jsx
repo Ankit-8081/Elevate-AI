@@ -80,11 +80,16 @@ export default function CareerDashboard() {
   const navigate = useNavigate();
   const milestone = user?.next_milestone;
   const roadmap = user?.roadmap || [];
-
   const allSkills = roadmap.flatMap(stage => stage.skills || []);
   const totalCompleted = allSkills.filter(skill => skill.status === "Completed").length;
   const progress = allSkills.length > 0 ? Math.round((totalCompleted / allSkills.length) * 100) : 0;
+  const nextStage = roadmap.find(stage =>
+  stage.skills?.some(skill => skill.status !== "Completed")
+);
 
+const upcomingSkills = nextStage
+  ? nextStage.skills.filter(skill => skill.status !== "Completed")
+  : [];
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
@@ -222,8 +227,8 @@ export default function CareerDashboard() {
           </section>
 
           <div className="grid lg:grid-cols-12 gap-8 mb-8">
-            <div className="lg:col-span-4 flex flex-col gap-8 h-[500px]">
-              <div className="bg-gradient-to-br from-white/[0.08] to-transparent border border-white/10 rounded-2xl p-6 backdrop-blur-xl relative overflow-hidden group">
+            <div className="lg:col-span-4 h-[500px]">
+              <div className="h-full bg-gradient-to-br from-white/[0.08] to-transparent border border-white/10 rounded-2xl p-6 backdrop-blur-xl relative overflow-hidden group">
                 <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-colors duration-500" />
                 
                 <div className="flex items-center justify-between mb-6 relative z-10">
@@ -272,24 +277,37 @@ export default function CareerDashboard() {
                     </div>
                     <div className="flex-1">
                       <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">Critical Skill Focus</div>
-                      <div className="text-xs font-semibold text-slate-200">
-                         {milestone?.skill || "Upload resume to begin"}
-                      </div>
+                     <div className="text-xs font-semibold text-slate-200 space-y-2">
+  {upcomingSkills.length > 0 ? (
+    upcomingSkills.slice(0,4).map((skill, i) => (
+      <motion.div
+        key={i}
+        whileHover={{ scale: 1.03 }}
+        whileTap={{ scale: 0.97 }}
+        onClick={() =>
+          navigate("/roadmap", {
+            state: { highlightSkill: skill.name }
+          })
+        }
+        className="flex items-center justify-between p-2 bg-white/5 border border-white/10 rounded-lg cursor-pointer hover:bg-blue-500/10 hover:border-blue-400/30 transition-all"
+      >
+        <span className="text-[11px] font-semibold text-slate-200">
+          {skill.name}
+        </span>
+
+        <ChevronRight size={14} className="text-slate-500" />
+      </motion.div>
+    ))
+  ) : (
+    "All milestones completed"
+  )}
+</div>
                     </div>
                     <ChevronRight size={14} className="text-slate-600 self-center group-hover/item:translate-x-1 transition-transform" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex-1 overflow-hidden flex flex-col">
-                <h3 className="text-sm font-semibold text-white mb-4 shrink-0">Recent Activity</h3>
-                <div className="space-y-1 overflow-y-auto custom-dark-scrollbar flex-1">
-                  <ActivityItem title="Applied to Vercel" time="2 hours ago" type="default" />
-                  <ActivityItem title="Python Quiz Passed" time="5 hours ago" type="success" />
-                  <ActivityItem title="Profile viewed by Meta" time="Yesterday" type="default" />
-                  <ActivityItem title="Researched Rust" time="2 days ago" type="default" />
-                </div>
-              </div>
             </div>
 
             <div className="lg:col-span-4 flex flex-col h-[500px]">

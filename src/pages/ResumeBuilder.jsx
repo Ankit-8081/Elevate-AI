@@ -166,7 +166,12 @@ const isResumeValid =
         }
       )
 
-      setResumeHTML(res.data.html)
+      const cleanedHTML = res.data.html
+  .replace(/^```html\s*/i, "")
+  .replace(/^```/i, "")
+  .replace(/```$/, "");
+
+setResumeHTML(cleanedHTML);
       setStage(2)
 
     } catch (err) {
@@ -229,7 +234,11 @@ const isResumeValid =
         }
       )
 
-      setResumeHTML(res.data.html)
+      const cleanedHTML = res.data.html
+     .replace(/^```html\s*/i, "")
+     .replace(/^```/i, "")
+     .replace(/```$/, "");
+     setResumeHTML(cleanedHTML);
 
       setMessages(prev => [
         ...prev,
@@ -248,7 +257,7 @@ const isResumeValid =
       <Sidebar />
       <main style={{ marginLeft: "var(--sidebar-width)" }} className="flex-1 flex flex-col relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.02),transparent_40%)] pointer-events-none" />
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 max-w-7xl mx-auto w-full relative z-10 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 w-full relative z-10 custom-scrollbar">
           <AnimatePresence mode="wait">
             {stage === 1 ? (
               <motion.div
@@ -518,21 +527,57 @@ const isResumeValid =
                 key="stage2"
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="h-[calc(100vh-4rem)] grid grid-cols-1 xl:grid-cols-12 gap-6 pb-4"
+                // Fix 1: Use h-auto on smaller screens to allow stacking, and fixed height only on extra-large screens
+                className="h-[calc(100vh-80px)] w-full grid grid-cols-1 xl:grid-cols-12 gap-6"
               >
-                <div className="xl:col-span-8 h-full flex flex-col bg-[#0b1320] border border-white/10 rounded-3xl shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-4 left-4 z-10 flex gap-2">
-                    <button onClick={() => setStage(1)} className="bg-[#050b14]/80 backdrop-blur-md p-2 rounded-xl text-white hover:bg-white/10 border border-white/10 transition-all shadow-lg"><ChevronLeft size={20} /></button>
-                    <button onClick={handleDownload} className="bg-blue-600/80 backdrop-blur-md px-4 py-2 rounded-xl text-white hover:bg-blue-500 border border-white/10 transition-all shadow-lg flex items-center gap-2 text-sm font-medium"><Download size={18} /> Download HTML</button>
+                {/* --- RESUME PREVIEW PANEL --- */}
+                {/* Fix 2: Give minimum heights for when columns stack on smaller screens */}
+                <div className="xl:col-span-8 min-h-[600px] xl:min-h-0 h-full flex flex-col bg-[#0b1320] border border-white/10 rounded-3xl shadow-2xl relative overflow-hidden">
+                  
+                  {/* Fix 3: Moved buttons into a proper Flex Header instead of absolute positioning overlapping the resume */}
+                  <div className="flex items-center justify-between p-4 border-b border-white/10 bg-black/40 backdrop-blur-md shrink-0">
+                    <button onClick={() => setStage(1)} className="bg-white/5 p-2 rounded-xl text-white hover:bg-white/10 border border-white/10 transition-all flex items-center gap-2">
+                      <ChevronLeft size={20} /> <span className="text-sm font-medium hidden sm:inline">Back to Editor</span>
+                    </button>
+                    <button onClick={handleDownload} className="bg-blue-600/90 px-4 py-2 rounded-xl text-white hover:bg-blue-500 shadow-lg transition-all flex items-center gap-2 text-sm font-medium">
+                      <Download size={18} /> Download HTML
+                    </button>
                   </div>
-                  <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 bg-black/20 flex justify-center items-start">
-                    <div className="w-full max-w-[21cm] shadow-2xl" dangerouslySetInnerHTML={{ __html: resumeHTML }} />
+
+                  <div className="flex-1 overflow-auto custom-scrollbar p-4 md:p-8 flex justify-center items-start bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent_80%)]">
+                   <iframe
+  title="resume-preview"
+  className="w-full max-w-[800px] h-[29.7cm] bg-white shadow-2xl border-0"
+  srcDoc={`
+    <html>
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+          body {
+            margin:0;
+            padding:20px;
+            background:white;
+            font-family: Inter, sans-serif;
+          }
+        </style>
+      </head>
+      <body>
+        ${resumeHTML}
+      </body>
+    </html>
+  `}
+/>
                   </div>
                 </div>
 
-                <div className="xl:col-span-4 h-full flex flex-col bg-white/5 border border-white/10 rounded-3xl relative overflow-hidden">
-                  <div className="p-4 border-b border-white/10 bg-white/5 backdrop-blur-xl flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center"><Sparkles size={18} className="text-white" /></div>
+                {/* --- AI CHAT PANEL --- */}
+                <div className="xl:col-span-4 h-[500px] xl:h-full flex flex-col bg-white/5 border border-white/10 rounded-3xl relative overflow-hidden">
+                  
+                  {/* Fix 5: Added shrink-0 to prevent headers/footers from squishing when chat fills up */}
+                  <div className="p-4 border-b border-white/10 bg-white/5 backdrop-blur-xl flex items-center gap-3 shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                      <Sparkles size={18} className="text-white" />
+                    </div>
                     <div>
                       <h3 className="text-white text-sm font-bold">AI Resume Editor</h3>
                       <p className="text-xs text-white/60">Powered by ElevateAI</p>
@@ -543,18 +588,20 @@ const isResumeValid =
                     {messages.map((msg, i) => (
                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[85%] p-3.5 rounded-2xl ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white/10 text-white/90 rounded-bl-none border border-white/10'}`}>
-                          <p className="text-sm leading-relaxed">{msg.content}</p>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                         </div>
                       </motion.div>
                     ))}
                   </div>
 
-                  <div className="p-4 border-t border-white/10 bg-black/20 backdrop-blur-xl space-y-3">
+                  <div className="p-4 border-t border-white/10 bg-black/20 backdrop-blur-xl space-y-3 shrink-0">
                     <div className="relative flex items-center">
-                      <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleChatCompile()} placeholder="e.g. Add React to my skills..." className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30 transition-all" />
+                      <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleChatCompile()} placeholder="e.g. Add React to my skills..." className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all" />
                       <button onClick={handleChatCompile} className="absolute right-2 p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all"><Send size={16} /></button>
                     </div>
-                    <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={handleChatCompile} className="w-full bg-white/10 hover:bg-white/20 text-white font-medium py-2.5 rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2 text-sm"><Cpu size={16} /> Execute AI Updates</motion.button>
+                    <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={handleChatCompile} className="w-full bg-white/10 hover:bg-white/20 text-white font-medium py-2.5 rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2 text-sm">
+                      <Cpu size={16} /> Execute AI Updates
+                    </motion.button>
                   </div>
                 </div>
               </motion.div>

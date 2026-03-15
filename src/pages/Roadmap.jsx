@@ -196,8 +196,21 @@ axios.get("http://127.0.0.1:8000/roadmap/user", {
         }
       ];
 
-      setRoadmapData(formatted);
-      setShowRoadmap(true);
+     setRoadmapData(formatted);
+     setShowRoadmap(true);
+
+    const token = localStorage.getItem("token");
+
+await axios.post(
+  "http://127.0.0.1:8000/roadmap/save",
+  { roadmap: formatted },
+  { headers: { Authorization: `Bearer ${token}` } }
+);
+
+const userRes = await axios.get("http://127.0.0.1:8000/me", {
+  headers: { Authorization: `Bearer ${token}` }
+});
+setUser(userRes.data);
 
     } catch (err) {
       console.error(err);
