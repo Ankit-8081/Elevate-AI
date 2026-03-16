@@ -31,6 +31,11 @@ const SkillRoadmap = () => {
   const roadmapRef = useRef(null);
 
   const highlightSkill = location.state?.highlightSkill;
+  const openStageId = highlightSkill
+  ? roadmapData.find(stage =>
+      stage.skills?.some(s => s.name === highlightSkill)
+    )?.id
+  : null;
   const [experience, setExperience] = useState("Beginner");
   const [learningStyle, setLearningStyle] = useState("Project Based");;
   useEffect(() => {
@@ -99,7 +104,6 @@ axios.get("http://127.0.0.1:8000/roadmap/user", {
 
     const lower = timeStr.toLowerCase();
 
-    // range like 2-3h
     if (lower.includes("-")) {
       const parts = lower.split("-");
       const first = parseFloat(parts[0]);
@@ -109,7 +113,6 @@ axios.get("http://127.0.0.1:8000/roadmap/user", {
       }
     }
 
-    // minutes
     if (lower.includes("min")) {
       const num = parseFloat(lower);
       return num / 60;
@@ -326,12 +329,13 @@ setUser(userRes.data);
                   >
                     {roadmapData.map((stage, index) => (
                       <StageCard
-                        key={stage.id}
-                        stage={stage}
-                        index={index}
-                        highlightSkill={highlightSkill}
-                        onStatusChange={handleStatusChange}
-                      />
+  key={stage.id}
+  stage={stage}
+  index={index}
+  highlightSkill={highlightSkill}
+  openStageId={openStageId}
+  onStatusChange={handleStatusChange}
+/>
                     ))}
                   </motion.div>
                 ) : (
@@ -404,11 +408,12 @@ setUser(userRes.data);
                   <div className="grid grid-cols-2 gap-3 mt-4">
                     <StatBox label="Streak" value="12 Days" icon={<TrendingUp size={14} />} color="text-orange-400" />
                     <StatBox
-                      label="Skills"
+                      label="Modules Completed"
                       value={`${totalCompleted}/${allSkills.length}`}
                       icon={<CheckCircle2 size={14} />}
                       color="text-green-400"
                     />
+                    
                   </div>
                 </div>
               </div>
@@ -420,8 +425,8 @@ setUser(userRes.data);
   );
 };
 
-const StageCard = ({ stage, index, onStatusChange, highlightSkill }) => {
-  const [expanded, setExpanded] = useState(index === 0);
+const StageCard = ({ stage, index, onStatusChange, highlightSkill, openStageId }) => {
+  const [expanded, setExpanded] = useState(openStageId === stage.id);
 
   return (
     <motion.div
@@ -488,45 +493,68 @@ const StageCard = ({ stage, index, onStatusChange, highlightSkill }) => {
   );
 };
 
-const SkillCard = ({ skill, onStatusUpdate, highlight }) => (<motion.div
-  whileHover={{ y: -2 }}
-  className={`p-4 rounded-xl border group transition-colors
-${highlight
-      ? "bg-red-500/10 border-red-400 shadow-[0_0_12px_rgba(239,68,68,0.6)]"
-      : "bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/60"
-    }`}
->
-  <div className="flex justify-between items-start mb-4">
-    <h4 className="font-semibold text-slate-200 text-sm leading-tight">{skill.name}</h4>
-    <StatusBadge
-      status={skill.status}
-      onChange={onStatusUpdate}
-    />
-  </div>
-  <div className="flex items-center justify-between text-[10px] text-slate-400">
+const SkillCard = ({ skill, onStatusUpdate, highlight }) => {
 
-    <span className={`px-2 py-0.5 rounded border uppercase font-bold ${getDiffColor(skill.difficulty)}`}>
-      {skill.difficulty}
-    </span>
+  const skillRef = useRef(null);
 
-    <span className="flex items-center gap-1">
-      <Clock size={10} /> {skill.time}
-    </span>
+  useEffect(() => {
+  if (highlight && skillRef.current) {
+    setTimeout(() => {
+      skillRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+    }, 300);
+  }
+}, [highlight]);
 
-    {skill.url && (
-      <a
-        href={skill.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-400 font-bold hover:underline flex items-center gap-1"
-      >
-        Docs <ExternalLink size={10} />
-      </a>
-    )}
+  return (
+    <motion.div
+      ref={skillRef}
+      whileHover={{ y: -2 }}
+      className={`p-4 rounded-xl border group transition-colors
+      ${
+        highlight
+          ? "bg-red-500/10 border-red-400 shadow-[0_0_12px_rgba(239,68,68,0.6)]"
+          : "bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/60"
+      }`}
+    >
+      <div className="flex justify-between items-start mb-4">
+        <h4 className="font-semibold text-slate-200 text-sm leading-tight">
+          {skill.name}
+        </h4>
 
-  </div>
-</motion.div>
-);
+        <StatusBadge
+          status={skill.status}
+          onChange={onStatusUpdate}
+        />
+      </div>
+
+      <div className="flex items-center justify-between text-[10px] text-slate-400">
+
+        <span className={`px-2 py-0.5 rounded border uppercase font-bold ${getDiffColor(skill.difficulty)}`}>
+          {skill.difficulty}
+        </span>
+
+        <span className="flex items-center gap-1">
+          <Clock size={10} /> {skill.time}
+        </span>
+
+        {skill.url && (
+          <a
+            href={skill.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 font-bold hover:underline flex items-center gap-1"
+          >
+            Docs <ExternalLink size={10} />
+          </a>
+        )}
+
+      </div>
+    </motion.div>
+  );
+};
 
 const StatusBadge = ({ status, onChange }) => {
   const getStatusStyles = (currentStatus) => {

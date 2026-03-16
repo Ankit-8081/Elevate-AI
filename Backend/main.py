@@ -10,6 +10,7 @@ import sqlite3
 import uuid
 import os
 import json
+import traceback
 
 from agentic_workflow.resume_builder_agent.main import generate_resume
 import base64
@@ -439,28 +440,39 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         raise HTTPException(status_code=404, detail="User not found")
         
     roadmap = json.loads(user["roadmap"]) if user["roadmap"] else []
+    completed_modules = 0
+    total_modules = 0
+    
+    for stage in roadmap:
+        for skill in stage["skills"]:
+            total_modules += 1
+            if skill["status"] == "Completed":
+                completed_modules += 1
+
     milestone = get_next_milestone(roadmap)
 
     return {
-        "name": user["name"],
-        "username": user["username"],
-        "email": user["email"],
-        "phone": user["phone"],
-        "bio": user["bio"],
-        "linkedin": user["linkedin"],
-        "current_role": user["current_role"],
-        "target_role": user["target_role"],
-        "profile_image": user["profile_image"],
-        "cover_image": user["cover_image"],
-        "resume": user["resume"],
-        "professional_links": json.loads(user["professional_links"]) if user["professional_links"] else [],
-        "market_readiness": user["market_readiness"],
-        "skills": json.loads(user["skills"]) if user["skills"] else [],
-        "projects": json.loads(user["projects"]) if user["projects"] else [],
-        "certifications": json.loads(user["certifications"]) if user["certifications"] else [],
-        "roadmap": roadmap,
-        "next_milestone": milestone
-    }
+    "name": user["name"],
+    "username": user["username"],
+    "email": user["email"],
+    "phone": user["phone"],
+    "bio": user["bio"],
+    "linkedin": user["linkedin"],
+    "current_role": user["current_role"],
+    "target_role": user["target_role"],
+    "profile_image": user["profile_image"],
+    "cover_image": user["cover_image"],
+    "resume": user["resume"],
+    "professional_links": json.loads(user["professional_links"]) if user["professional_links"] else [],
+    "market_readiness": user["market_readiness"],
+    "skills": json.loads(user["skills"]) if user["skills"] else [],
+    "projects": json.loads(user["projects"]) if user["projects"] else [],
+    "certifications": json.loads(user["certifications"]) if user["certifications"] else [],
+    "roadmap": roadmap,
+    "next_milestone": milestone,
+    "modules_completed": completed_modules,
+    "modules_total": total_modules
+}
 
 @app.post("/profile/update")
 def update_profile(
@@ -592,6 +604,7 @@ def get_user_roadmap(
 
     return {"roadmap": roadmap}
 
+
 @app.post("/upload-resume")
 async def analyze_uploaded_resume(
     file: UploadFile = File(...),
@@ -599,27 +612,21 @@ async def analyze_uploaded_resume(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     try:
-        # verify user
         token = credentials.credentials
         email = verify_token(token)
 
-        # ensure uploads folder exists
         upload_dir = "uploads"
         os.makedirs(upload_dir, exist_ok=True)
 
-        # create unique filename
         file_ext = file.filename.split(".")[-1]
         unique_name = f"{uuid.uuid4()}.{file_ext}"
         file_path = os.path.join(upload_dir, unique_name)
 
-        # read uploaded file
         contents = await file.read()
 
-        # save file
         with open(file_path, "wb") as f:
             f.write(contents)
 
-        # run AI resume analysis
         report = await analyze_resume(contents, target_job)
 
 
@@ -660,7 +667,7 @@ async def analyze_uploaded_resume(
         }
 
     except Exception as e:
-        print(e)
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 # ---------------- JOB SEARCH ---------------- #
 

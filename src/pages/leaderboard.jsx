@@ -90,7 +90,7 @@ const UserCard = ({ user, rank }) => (
       </div>
     </div>
 
-    <div className="grid grid-cols-3 gap-8 px-8 border-x border-white/5 hidden lg:grid">
+    <div className="grid-cols-3 gap-8 px-8 border-x border-white/5 hidden lg:grid">
       <div className="text-center">
         <p className="text-xl font-bold text-white">{user.score}</p>
         <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Skill Score</p>

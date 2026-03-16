@@ -68,34 +68,34 @@ const EditableInput = ({ label, value, setValue, icon: Icon, type = "text", disa
   );
 };
 
-const StatsPanel = ({ projects, skills, certifications }) => {
+const StatsPanel = ({ projects, skills, certifications, modulesCompleted, modulesTotal }) => {
 
   const stats = [
-    {
-      label: "Projects Built",
-      value: projects?.length || 0,
-      borderColor: "border-l-amber-500",
-      shadow: "shadow-amber-500/10"
-    },
-    {
-      label: "Modules Completed",
-      value: skills?.length || 0, // you can map modules to skills count
-      borderColor: "border-l-purple-500",
-      shadow: "shadow-purple-500/10"
-    },
-    {
-      label: "Skills Mastered",
-      value: skills?.length || 0,
-      borderColor: "border-l-emerald-500",
-      shadow: "shadow-emerald-500/10"
-    },
-    {
-      label: "Certifications",
-      value: certifications?.length || 0,
-      borderColor: "border-l-pink-500",
-      shadow: "shadow-pink-500/10"
-    }
-  ];
+  {
+    label: "Projects Built",
+    value: projects?.length || 0,
+    borderColor: "border-l-amber-500",
+    shadow: "shadow-amber-500/10"
+  },
+  {
+    label: "Modules Completed",
+    value: `${modulesCompleted || 0}`,
+    borderColor: "border-l-purple-500",
+    shadow: "shadow-purple-500/10"
+  },
+  {
+    label: "Skills Mastered",
+    value: skills?.length || 0,
+    borderColor: "border-l-emerald-500",
+    shadow: "shadow-emerald-500/10"
+  },
+  {
+    label: "Certifications",
+    value: certifications?.length || 0,
+    borderColor: "border-l-pink-500",
+    shadow: "shadow-pink-500/10"
+  }
+];
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -388,6 +388,7 @@ const ProfilePage = () => {
                 projects={user?.projects}
                 skills={user?.skills}
                 certifications={user?.certifications}
+                modulesCompleted={user?.modules_completed}
               />
 
               <GlassCard>

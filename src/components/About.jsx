@@ -21,6 +21,7 @@ import { useEffect } from "react";
 import aayushImg from "../assets/Aayush.jpeg";
 import prateekImg from "../assets/Prateek.jpeg";
 import rasikaImg from "../assets/Rasika.jpg"
+import shreyanshImg from "../assets/Shreyansh.jpeg"
 import emailjs from "@emailjs/browser";
 import { useRef } from "react";
 
@@ -58,7 +59,7 @@ useEffect(() => {
       role: "Backend Developer",
       desc: "Building scalable infrastructure and secure API ecosystems for seamless data flow.",
       icon: <Terminal className="text-purple-400" />,
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&h=200&auto=format&fit=crop"
+      image: shreyanshImg
     },
     {
       name: "Prateek Rastogi",
