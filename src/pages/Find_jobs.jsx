@@ -84,7 +84,7 @@ useEffect(() => {
         title: job.title,
         company: job.company,
         location: job.location,
-        salary: "Not specified",
+        
         source: job.source || "Web",
         match_score: Math.floor(Math.random() * 40) + 60,
         description: job.description,
@@ -123,7 +123,7 @@ const autoSearch = async (jobTitle) => {
       title: job.title,
       company: job.company,
       location: job.location,
-      salary: "Not specified",
+      
       source: job.source || "Web",
       match_score: Math.floor(Math.random() * 40) + 60,
       description: job.description,
@@ -165,8 +165,7 @@ const autoSearch = async (jobTitle) => {
         id: i,
         title: job.title,
         company: job.company,
-        location: job.location,
-        salary: "Not specified",
+        location: job.location,    
         source: job.source || "Web",
         match_score: Math.floor(Math.random() * 40) + 60,
         description: job.description,
@@ -285,7 +284,7 @@ const autoSearch = async (jobTitle) => {
 
           {/* JOB LIST */}
 
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <AnimatePresence>
 
               {loading ? (
@@ -326,73 +325,86 @@ const autoSearch = async (jobTitle) => {
   );
 };
 
-/* ---------------- JOB CARD ---------------- */
-
 const JobCard = ({ job, onOpen }) => {
 
-  const getScoreColor = (score) => {
-    if (score >= 80) return "text-emerald-400 bg-emerald-400/10";
-    if (score >= 60) return "text-amber-400 bg-amber-400/10";
-    return "text-rose-400 bg-rose-400/10";
-  };
+  // Soft pastel background palette
+  const cardColors = [
+    "bg-indigo-500/10 border-indigo-400/20",
+    "bg-cyan-500/10 border-cyan-400/20",
+    "bg-emerald-500/10 border-emerald-400/20",
+    "bg-pink-500/10 border-pink-400/20",
+    "bg-purple-500/10 border-purple-400/20",
+    "bg-orange-500/10 border-orange-400/20",
+  ];
+
+  // pick color based on job id
+  const color = cardColors[job.id % cardColors.length];
 
   const getSourceColor = (source) => {
-    if (source === "LinkedIn") return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-    if (source === "Naukri") return "bg-orange-500/10 text-orange-400 border-orange-500/20";
+    if (source === "LinkedIn")
+      return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+    if (source === "Naukri")
+      return "bg-orange-500/10 text-orange-400 border-orange-500/20";
     return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
   };
 
   return (
-    <div className="group relative p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-indigo-500/50 hover:bg-white/[0.07] transition-all">
+    <motion.div
+      onClick={onOpen}
+      whileHover={{ y: -5 }}
+      className={`group relative p-6 rounded-2xl backdrop-blur-xl
+      border transition-all cursor-pointer shadow-lg hover:shadow-indigo-500/10
+      ${color}`}
+    >
 
-      <div className="flex justify-between items-start mb-4">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-5">
 
-        <div className="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
-          <Briefcase className="text-indigo-400" size={24} />
-        </div>
+        <div className="flex items-center gap-4">
 
-        <div className="flex items-center gap-2">
 
-          <div className={`px-3 py-1 rounded-lg text-xs font-bold uppercase ${getScoreColor(job.match_score)}`}>
-            {job.match_score}% Match
+          <div>
+            <h3 className="text-lg font-semibold text-white group-hover:text-indigo-300 transition">
+              {job.title}
+            </h3>
+
+            <p className="text-slate-300 text-sm font-medium">
+              {job.company}
+            </p>
           </div>
 
-          <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getSourceColor(job.source)}`}>
-            {job.source}
-          </span>
-
         </div>
 
+        <span
+          className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getSourceColor(job.source)}`}
+        >
+          {job.source}
+        </span>
+
       </div>
 
-      <h3 className="text-xl font-semibold text-white group-hover:text-indigo-300 transition-colors">
-        {job.title}
-      </h3>
-
-      <p className="text-slate-400 mt-1 font-medium">{job.company}</p>
-
-      <div className="mt-4 flex items-center gap-3 text-sm text-slate-500">
-        <MapPin size={14} /> {job.location}
+      {/* Location */}
+      <div className="flex items-center gap-2 text-sm font-semibold text-slate-200 mb-6">
+        <MapPin size={15} className="text-indigo-400" />
+        {job.location || "Remote"}
       </div>
 
-      <div className="mt-6 flex items-center justify-between">
-
-        <span className="text-white font-semibold">{job.salary}</span>
+      {/* Footer */}
+      <div className="flex justify-between items-center">
 
         <button
-          onClick={onOpen}
-          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all"
+          className="flex items-center gap-2 text-sm font-semibold text-indigo-300
+          group-hover:text-indigo-200 transition"
         >
-          <ChevronRight size={20} />
+          View Job
+          <ChevronRight size={18} />
         </button>
 
       </div>
 
-    </div>
+    </motion.div>
   );
 };
-
-/* ---------------- JOB MODAL ---------------- */
 
 const JobModal = ({ job, onClose }) => {
   return (
@@ -402,60 +414,106 @@ const JobModal = ({ job, onClose }) => {
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
     >
-
       <motion.div
         initial={{ scale: 0.95, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 20 }}
         className="bg-[#0a101f] border border-white/10 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl"
       >
+        <div className="p-8 space-y-7">
 
-        <div className="p-8 space-y-6">
-
+          {/* HEADER */}
           <div className="flex justify-between items-start">
 
-            <div>
-              <h2 className="text-3xl font-bold text-white">{job.title}</h2>
-              <p className="text-indigo-400 font-medium mt-1">
-                {job.company} • {job.location}
-              </p>
+            <div className="space-y-1">
+              <h2 className="text-3xl font-bold text-white">
+                {job.title}
+              </h2>
+
+              <div className="flex items-center gap-3 text-sm text-slate-400">
+                <span className="text-indigo-400 font-medium">
+                  {job.company}
+                </span>
+
+                <span className="w-1 h-1 bg-slate-600 rounded-full"/>
+
+                <span>{job.location || "Remote"}</span>
+
+                <span className="w-1 h-1 bg-slate-600 rounded-full"/>
+
+                <span className="text-indigo-300">
+                  {job.source}
+                </span>
+              </div>
             </div>
 
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition-all"
+              className="p-2 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition"
             >
-              <X size={24} />
+              <X size={22} />
             </button>
 
           </div>
 
+
+          {/* DESCRIPTION */}
           <div>
-            <h4 className="text-white font-semibold mb-2">About the Role</h4>
+            <h4 className="text-white font-semibold mb-2">
+              About the Role
+            </h4>
+
             <p className="text-slate-400 text-sm leading-relaxed">
               {job.description}
             </p>
           </div>
 
-          <div className="flex gap-4 pt-4 border-t border-white/5">
 
-            <button
-              onClick={() => window.open(job.url, "_blank")}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all"
-            >
-              Apply
-            </button>
+          {/* APPLY CARD */}
+          <div className="bg-gradient-to-br from-indigo-600/10 via-indigo-500/5 to-cyan-500/10 border border-indigo-500/20 rounded-2xl p-6 space-y-5">
 
-            <button className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">
-              <Bookmark size={20} />
-            </button>
+            <div className="flex items-center justify-between">
+
+              <div>
+                <p className="text-white font-semibold text-lg">
+                  Ready to Apply?
+                </p>
+
+                <p className="text-sm text-slate-400">
+                  This will open the job posting on{" "}
+                  <span className="text-indigo-400">{job.source}</span>
+                </p>
+              </div>
+
+              <div className="bg-indigo-500/10 border border-indigo-400/20 text-indigo-300 px-3 py-1 rounded-lg text-xs font-semibold">
+                External
+              </div>
+
+            </div>
+
+
+            <div className="flex gap-4">
+
+              {/* APPLY BUTTON */}
+              <button
+                onClick={() => window.open(job.url, "_blank")}
+                className="flex-1 bg-gradient-to-r from-indigo-600 to-cyan-500 hover:opacity-90 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+              >
+                Apply Now
+                <ChevronRight size={18} />
+              </button>
+
+              {/* SAVE BUTTON */}
+              <button className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all flex items-center justify-center">
+                <Bookmark size={20} />
+              </button>
+
+            </div>
 
           </div>
 
         </div>
-
       </motion.div>
-
     </motion.div>
   );
 };

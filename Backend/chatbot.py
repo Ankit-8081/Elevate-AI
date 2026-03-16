@@ -45,11 +45,25 @@ class PersistentChatbot:
             input_messages_key="messages",
         )
 
+        self.prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are a helpful career assistant. User Info: {user_context}. Language: {language}"),
+        MessagesPlaceholder(variable_name="messages"),
+    ])
     def _get_session_history(self, session_id: str) -> BaseChatMessageHistory:
-        """Internal method to fetch/create session store."""
         if session_id not in self._store:
             self._store[session_id] = ChatMessageHistory()
         return self._store[session_id]
+
+    # Inside PersistentChatbot.ask
+    def ask(self, query: str, session_id: str, user_context: str = "N/A", language: str = "English") -> str:
+        config = {"configurable": {"session_id": session_id}}
+        input_data = {
+            "messages": [HumanMessage(content=query)],
+            "language": language,
+            "user_context": user_context  # This injects the profile into the system prompt
+        }
+        response = self.chain_with_history.invoke(input_data, config=config)
+        return response.content
 
     @staticmethod
     def generate_session_id(prefix: str = "chat") -> str:
@@ -57,16 +71,6 @@ class PersistentChatbot:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         random_str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
         return f"{prefix}_{timestamp}_{random_str}"
-
-    def ask(self, query: str, session_id: str, language: str = "English") -> str:
-        """The primary interface for the user to interact with the bot."""
-        config = {"configurable": {"session_id": session_id}}
-        input_data = {
-            "messages": [HumanMessage(content=query)],
-            "language": language
-        }
-        response = self.chain_with_history.invoke(input_data, config=config)
-        return response.content
 
 # --- 7. USAGE EXAMPLE ---
 
