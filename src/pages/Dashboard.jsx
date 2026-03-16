@@ -76,6 +76,15 @@ export default function CareerDashboard() {
   const [messages, setMessages] = useState([
     { role: 'ai', content: 'Welcome back! How can I help you accelerate your career today?' }
   ]);
+  const aiResponses = messages.filter(m => m.role === "ai" && m.responseTime);
+
+const avgResponse =
+  aiResponses.length > 0
+    ? (
+        aiResponses.reduce((sum, m) => sum + parseFloat(m.responseTime), 0) /
+        aiResponses.length
+      ).toFixed(2)
+    : "--";
   const [loadingAI, setLoadingAI] = useState(false);
   const navigate = useNavigate();
   const milestone = user?.next_milestone;
@@ -112,28 +121,42 @@ const upcomingSkills = nextStage
   }, [navigate]);
 
   const askAI = async (customPrompt) => {
-    const activePrompt = customPrompt || prompt;
-    if (!activePrompt.trim()) return;
+  const activePrompt = customPrompt || prompt;
+  if (!activePrompt.trim()) return;
 
-    const token = localStorage.getItem("token");
-    const userMsg = { role: 'user', content: activePrompt };
-    setMessages(prev => [...prev, userMsg]);
-    setPrompt("");
-    setLoadingAI(true);
+  const token = localStorage.getItem("token");
 
-    try {
-      const res = await axios.post(
-        "http://127.0.0.1:8000/ai/chat",
-        { message: activePrompt },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setMessages(prev => [...prev, { role: 'ai', content: res.data.reply }]);
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'ai', content: "Sorry, I encountered an error processing that request." }]);
-    }
-    setLoadingAI(false);
-  };
+  const userMsg = { role: 'user', content: activePrompt };
+  setMessages(prev => [...prev, userMsg]);
+  setPrompt("");
+  setLoadingAI(true);
 
+
+  try {
+    const res = await axios.post(
+      "http://127.0.0.1:8000/ai/chat",
+      { message: activePrompt },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+   setMessages(prev => [
+  ...prev,
+  {
+    role: "ai",
+    content: res.data.reply,
+    responseTime: res.data.response_time
+  }
+]);
+
+  } catch (err) {
+    setMessages(prev => [
+      ...prev,
+      { role: 'ai', content: "Sorry, I encountered an error processing that request." }
+    ]);
+  }
+
+  setLoadingAI(false);
+};
   const formatAiReply = (text) => {
     if (!text) return null;
     let listCounter = 0;
@@ -158,6 +181,19 @@ const upcomingSkills = nextStage
       );
     });
   };
+useEffect(() => {
+  const token = localStorage.getItem("token");
+
+  axios.get("http://127.0.0.1:8000/ai/history", {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => {
+    if (res.data.messages.length > 0) {
+      setMessages(res.data.messages);
+    }
+  })
+  .catch(() => {});
+}, []);
 
   return (
     <div className="min-h-screen bg-[#050b14] text-slate-200 flex font-sans selection:bg-blue-500/30 overflow-hidden">
@@ -222,8 +258,18 @@ const upcomingSkills = nextStage
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
             <StatCard icon={TrendingUp} label="Market Readiness" value={user?.market_readiness || "--"} color="bg-blue-500" />
             <StatCard icon={CheckCircle2} label="Verified Skills" value={user?.skills?.length || "0"} color="bg-yellow-500" />
-            <StatCard icon={Zap} label="Learning Streak" value="14 Days" color="bg-emerald-500" />
-            <StatCard icon={Clock} label="Avg. Response Time" value="2.4d" color="bg-amber-500" />
+            <StatCard
+  icon={Zap}
+  label="Learning Streak"
+  value={`${user?.learning_streak || 0} Days`}
+  color="bg-emerald-500"
+/>
+            <StatCard
+  icon={Clock}
+  label="Avg. Response Time"
+  value={avgResponse !== "--" ? `${avgResponse}s` : "--"}
+  color="bg-amber-500"
+/>
           </section>
 
           <div className="grid lg:grid-cols-12 gap-8 mb-8">
@@ -301,7 +347,7 @@ const upcomingSkills = nextStage
             </div>
 
             <div className="lg:col-span-4 flex flex-col h-[500px]">
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col relative overflow-hidden group h-full">
+              <div className="bg-white/5 border border-emerald-400/30 shadow-[0_0_50px_rgba(16,185,129,0.35)] rounded-3xl p-6 flex flex-col relative overflow-hidden group h-full">
                 <div className="absolute inset-0 bg-emerald-600/[0.02] group-hover:bg-emerald-600/[0.05] transition-colors" />
                 <div className="flex justify-between items-start mb-6 shrink-0 relative z-10">
                   <h3 className="text-xl font-bold text-white mb-1">Skill Breakdown</h3>
@@ -341,7 +387,15 @@ const upcomingSkills = nextStage
                   {messages.map((msg, i) => (
                     <motion.div initial={{ opacity: 0, x: msg.role === 'user' ? 10 : -10 }} animate={{ opacity: 1, x: 0 }} key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] p-3 rounded-2xl text-[11px] leading-relaxed ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white/5 border border-white/10 text-slate-300 rounded-bl-none'}`}>
-                        {msg.role === 'ai' ? formatAiReply(msg.content) : msg.content}
+                        <>
+  {msg.role === 'ai' ? formatAiReply(msg.content) : msg.content}
+
+  {msg.role === 'ai' && msg.responseTime && (
+    <div className="text-[9px] text-slate-500 mt-1">
+      responded in {msg.responseTime}s
+    </div>
+  )}
+</>
                       </div>
                     </motion.div>
                   ))}

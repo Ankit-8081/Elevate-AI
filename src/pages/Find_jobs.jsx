@@ -18,12 +18,12 @@ const FindJobs = () => {
   const [loading, setLoading] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
-  const [searchQuery, setSearchQuery] = useState({
-    query: location.state?.jobTitle || "",
-    location: "",
-    experience: "Intermediate",
-    sources: ["linkedin", "naukri", "web"],
-  });
+ const [searchQuery, setSearchQuery] = useState({
+  query: "",
+  location: "",
+  experience: "Intermediate",
+  sources: ["linkedin", "naukri", "web"],
+});
 
   const sources = [
     { id: "linkedin", label: "LinkedIn", color: "bg-blue-600" },
@@ -31,13 +31,28 @@ const FindJobs = () => {
     { id: "web", label: "Web Jobs", color: "bg-emerald-500" },
   ];
 
-  useEffect(() => {
-    if (location.state?.jobTitle) {
-      handleSearch(new Event("submit"));
-    } else {
-      fetchJobs();
-    }
-  }, []);
+useEffect(() => {
+
+  const fromResume = location.state?.trigger === "resume";
+  const jobTitle = location.state?.jobTitle;
+
+  if (fromResume && jobTitle) {
+
+    setSearchQuery((prev) => ({
+      ...prev,
+      query: jobTitle
+    }));
+
+    autoSearch(jobTitle);
+
+    // clear navigation state
+    window.history.replaceState({}, document.title);
+
+  } else {
+    fetchJobs();
+  }
+
+}, []);
 
   const fetchJobs = async () => {
     setLoading(true);
@@ -66,6 +81,46 @@ const FindJobs = () => {
 
     setLoading(false);
   };
+
+const autoSearch = async (jobTitle) => {
+
+  setLoading(true);
+
+  try {
+    const res = await fetch("http://localhost:8000/jobs/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...searchQuery,
+        query: jobTitle
+      }),
+    });
+
+    const data = await res.json();
+
+    const formattedJobs = (data.jobs || []).map((job, i) => ({
+      id: i,
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      salary: "Not specified",
+      source: job.source || "Web",
+      match_score: Math.floor(Math.random() * 40) + 60,
+      description: job.description,
+      skills: [],
+      url: job.url,
+    }));
+
+    setJobs(formattedJobs);
+
+  } catch (err) {
+    console.error("Auto job search failed:", err);
+  }
+
+  setLoading(false);
+};
 
   const handleSearch = async (e) => {
     e.preventDefault();

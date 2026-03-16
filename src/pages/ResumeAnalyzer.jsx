@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from "react-router-dom";
@@ -7,7 +7,7 @@ import {
   Search, Bell, User, Upload, CheckCircle2, AlertTriangle, ArrowRight,
   Download, Copy, RefreshCw, X, Zap, ChevronRight, Target, Sparkles,
   Trophy, TrendingUp, BarChart3, ShieldCheck, BriefcaseBusiness, ExternalLink,
-  Map
+  Map, RotateCcw
 } from 'lucide-react';
 import Header from '../components/header';
 import Sidebar from '../components/sidebar';
@@ -28,8 +28,24 @@ export default function ResumeDashboard() {
   const [file, setFile] = useState(null);
   const [targetJob, setTargetJob] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
-  const [data, setData] = useState(null);
-  const [score, setScore] = useState(0);
+  const [data, setData] = useState(() => {
+    const saved = localStorage.getItem("resume_analysis_data");
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [score, setScore] = useState(() => {
+    const saved = localStorage.getItem("resume_analysis_score");
+    return saved ? parseInt(saved) : 0;
+  });
+
+  useEffect(() => {
+    if (data) {
+      localStorage.setItem("resume_analysis_data", JSON.stringify(data));
+      localStorage.setItem("resume_analysis_score", score.toString());
+    } else {
+      localStorage.removeItem("resume_analysis_data");
+      localStorage.removeItem("resume_analysis_score");
+    }
+  }, [data, score]);
 
   const onUpload = async () => {
     if (!file) return;
@@ -52,14 +68,25 @@ export default function ResumeDashboard() {
       );
       setData(res.data);
       setScore(res.data.ats_score);
+
+      localStorage.setItem("target_job", targetJob);
     } catch (err) {
       console.error("Resume analysis error:", err);
     }
     setAnalyzing(false);
   };
 
+  const resetAnalysis = () => {
+    setData(null);
+    setScore(0);
+    setFile(null);
+    setTargetJob("");
+    localStorage.removeItem("resume_analysis_data");
+    localStorage.removeItem("resume_analysis_score");
+  };
+
   const getStatusStyles = (status) => {
-    const s = status.toLowerCase();
+    const s = status?.toLowerCase() || "";
     if (s.includes("high") || s.includes("strong")) {
       return {
         color: "text-emerald-400",
@@ -189,7 +216,7 @@ export default function ResumeDashboard() {
                     </div>
                     <div className="pt-4 border-t border-white/5">
                       <p className="text-xs text-slate-400 leading-relaxed italic">
-                        Your profile was analyzed against the role: {targetJob}.
+                        Your profile was analyzed against the role: {targetJob || "target role"}.
                       </p>
                     </div>
                   </div>
@@ -244,28 +271,51 @@ export default function ResumeDashboard() {
 
                 <GlassCard className="flex-1 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center justify-between mb-8">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
                       <h3 className="text-lg font-bold text-white flex items-center gap-3">
                         <Sparkles size={20} className="text-cyan-400" /> AI Rewrite Suggestions
                       </h3>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          onClick={() => navigate("/roadmap", { state: { role: targetJob } })}
-                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600/20 to-purple-600/20 border border-violet-500/30 text-violet-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:from-violet-600/30 hover:to-purple-600/30 transition-all shadow-lg shadow-violet-900/20"
+                          onClick={resetAnalysis}
+                          className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-white/10 transition-all"
                         >
-                          <Map size={14} />
-                          Generate Roadmap
+                          <RotateCcw size={14} />
+                          Analyze Again
                         </motion.button>
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          onClick={() => navigate("/Find_jobs", { state: { jobTitle: targetJob } })}
+                          onClick={() =>
+  navigate("/roadmap", {
+    state: {
+      role: targetJob,
+      trigger: "resume"
+    }
+  })
+}
+                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600/20 to-purple-600/20 border border-violet-500/30 text-violet-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:from-violet-600/30 hover:to-purple-600/30 transition-all shadow-lg shadow-violet-900/20"
+                        >
+                          <Map size={14} />
+                          Roadmap
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() =>
+  navigate("/Find_jobs", {
+    state: {
+      jobTitle: targetJob,
+      trigger: "resume"
+    }
+  })
+}
                           className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:from-cyan-600/30 hover:to-blue-600/30 transition-all shadow-lg shadow-cyan-900/20"
                         >
                           <BriefcaseBusiness size={14} />
-                          View Job Matches
+                          Jobs
                           <ExternalLink size={12} />
                         </motion.button>
                       </div>
