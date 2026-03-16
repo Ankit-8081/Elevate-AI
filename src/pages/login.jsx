@@ -187,7 +187,7 @@ function Login() {
 
       if(error.response){
         setErrors({
-                    general: error.response?.data?.detail?.[0]?.msg || "Authentication failed"
+                    general: error.response?.data?.detail || "Authentication failed"
                   });
       }else{
         setErrors({general:"Server unreachable"});

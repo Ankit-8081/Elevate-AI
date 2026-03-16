@@ -25,11 +25,16 @@ const SkillRoadmap = () => {
   const [loading, setLoading] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
-  const [role, setRole] = useState(location.state?.role || "");
+  const [role, setRole] = useState(
+  location.state?.role || localStorage.getItem("target_job") || ""
+);
   const [roadmapData, setRoadmapData] = useState([]);
   const [user, setUser] = useState(null);
   const roadmapRef = useRef(null);
-
+  const [streak, setStreak] = useState(() => {
+     const saved = localStorage.getItem("learning_streak");
+     return saved ? parseInt(saved) : 0;
+  });
   const highlightSkill = location.state?.highlightSkill;
   const openStageId = highlightSkill
   ? roadmapData.find(stage =>
@@ -70,34 +75,67 @@ axios.get("http://127.0.0.1:8000/roadmap/user", {
 .catch(() => {});
   }, [navigate]);
 
-  useEffect(() => {
-    if (location.state?.role && !showRoadmap && role.trim() !== "") {
-      handleGenerate();
-    }
-  }, [location.state, role]);
+useEffect(() => {
+  if (
+    location.state?.trigger === "resume" &&
+    role.trim() !== "" &&
+    !showRoadmap
+  ) {
+    handleGenerate();
+  }
+}, [location.state]);
 
   const handleStatusChange = (stageId, skillName, newStatus) => {
-    const newData = roadmapData.map(stage => {
-      if (stage.id === stageId) {
-        const updatedSkills = stage.skills.map(skill =>
-          skill.name === skillName ? { ...skill, status: newStatus } : skill
-        );
-        const completed = updatedSkills.filter(s => s.status === "Completed").length;
-        const stageProgress = Math.round((completed / updatedSkills.length) * 100);
-        return { ...stage, skills: updatedSkills, progress: stageProgress };
+
+  const newData = roadmapData.map(stage => {
+    if (stage.id === stageId) {
+      const updatedSkills = stage.skills.map(skill =>
+        skill.name === skillName ? { ...skill, status: newStatus } : skill
+      );
+
+      const completed = updatedSkills.filter(s => s.status === "Completed").length;
+      const stageProgress = Math.round((completed / updatedSkills.length) * 100);
+
+      return { ...stage, skills: updatedSkills, progress: stageProgress };
+    }
+    return stage;
+  });
+
+  setRoadmapData(newData);
+
+  /* -------- STREAK LOGIC -------- */
+
+  if (newStatus === "Completed") {
+
+    const today = new Date().toDateString();
+    const lastDay = localStorage.getItem("last_streak_day");
+
+    if (lastDay !== today) {
+
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      if (lastDay === yesterday.toDateString()) {
+        const newStreak = streak + 1;
+        setStreak(newStreak);
+        localStorage.setItem("learning_streak", newStreak);
+      } else {
+        setStreak(1);
+        localStorage.setItem("learning_streak", 1);
       }
-      return stage;
-    });
 
-    setRoadmapData(newData);
-    const token = localStorage.getItem("token");
+      localStorage.setItem("last_streak_day", today);
+    }
+  }
 
-    axios.post(
-      "http://127.0.0.1:8000/roadmap/save",
-      { roadmap: newData },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-  };
+  const token = localStorage.getItem("token");
+
+  axios.post(
+    "http://127.0.0.1:8000/roadmap/save",
+    { roadmap: newData },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+};
 
   const parseLearningTime = (timeStr) => {
     if (!timeStr) return 0;
@@ -152,8 +190,7 @@ axios.get("http://127.0.0.1:8000/roadmap/user", {
         topic: role,
         experience_level: experience,
         learning_style: learningStyle,
-        limit: 5
-      });
+        upper_limit: 5  });
 
       const data = res.data;
 
@@ -201,6 +238,11 @@ axios.get("http://127.0.0.1:8000/roadmap/user", {
 
      setRoadmapData(formatted);
      setShowRoadmap(true);
+
+     // reset learning streak for new roadmap
+    setStreak(0);
+    localStorage.setItem("learning_streak", 0);
+    localStorage.removeItem("last_streak_day");
 
     const token = localStorage.getItem("token");
 
@@ -406,7 +448,12 @@ setUser(userRes.data);
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 mt-4">
-                    <StatBox label="Streak" value="12 Days" icon={<TrendingUp size={14} />} color="text-orange-400" />
+                    <StatBox
+  label="Streak"
+  value={`${streak} Days`}
+  icon={<TrendingUp size={14} />}
+  color="text-orange-400"
+/>
                     <StatBox
                       label="Modules Completed"
                       value={`${totalCompleted}/${allSkills.length}`}

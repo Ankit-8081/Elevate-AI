@@ -11,7 +11,7 @@ import uuid
 import os
 import json
 import traceback
-
+import time
 from agentic_workflow.resume_builder_agent.main import generate_resume
 import base64
 from Roadmap import Roadmap
@@ -210,7 +210,7 @@ def init_db():
     cursor = conn.cursor()
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     username TEXT,
@@ -229,9 +229,23 @@ def init_db():
     projects TEXT,
     certifications TEXT,
     resume TEXT,
-    roadmap TEXT
+    roadmap TEXT,
+
+    created_at TEXT,
+    last_active_date TEXT,
+    learning_streak INTEGER DEFAULT 1
 )
-    """)
+""")
+    cursor.execute("""
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email TEXT,
+    role TEXT,
+    message TEXT,
+    response_time REAL,
+    created_at TEXT
+)
+""")
 
     conn.commit()
     conn.close()
@@ -325,6 +339,7 @@ def signup(data: SignupRequest):
         raise HTTPException(status_code=400, detail="User already exists")
 
     hashed = hash_password(data.password)
+    today = datetime.utcnow().date().isoformat()
 
     cursor.execute(
         """
@@ -338,9 +353,12 @@ def signup(data: SignupRequest):
             bio,
             current_role,
             target_role,
-            professional_links
+            professional_links,
+            created_at,
+            last_active_date,
+            learning_streak
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             data.name,
@@ -352,7 +370,10 @@ def signup(data: SignupRequest):
             "",
             "",
             "",
-            json.dumps([])
+            json.dumps([]),
+            today,
+            today,
+            1
         )
     )
 
@@ -369,20 +390,45 @@ def login(data: LoginRequest):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT name, linkedin, email, password FROM users WHERE email = ?",
-        (data.email,)
-    )
+    "SELECT name, username, linkedin, email, password, last_active_date, learning_streak FROM users WHERE email = ?",
+    (data.email,)
+)
 
     user = cursor.fetchone()
-    conn.close()
 
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    name, linkedin, email, password_hash = user
+    name, username, linkedin, email, password_hash, last_active, streak = user
 
     if not verify_password(data.password, password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    today = datetime.utcnow().date()
+
+    if last_active:
+        last_active_date = datetime.strptime(last_active, "%Y-%m-%d").date()
+        diff = (today - last_active_date).days
+
+        if diff == 1:
+            streak += 1
+        elif diff > 1:
+            streak = 1
+    else:
+        streak = 1
+
+    # 🔥 SAVE STREAK
+    cursor.execute(
+        """
+        UPDATE users
+        SET last_active_date=?, learning_streak=?
+        WHERE email=?
+        """,
+        (today.isoformat(), streak, email)
+    )
+
+    conn.commit()
+    conn.close()
 
     token = create_token(email)
 
@@ -390,12 +436,11 @@ def login(data: LoginRequest):
         "token": token,
         "user": {
             "name": name,
+            "username": username,
             "linkedin": linkedin,
             "email": email
         }
     }
-
-
 @app.get("/dashboard")
 def dashboard(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
@@ -471,7 +516,8 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     "roadmap": roadmap,
     "next_milestone": milestone,
     "modules_completed": completed_modules,
-    "modules_total": total_modules
+    "modules_total": total_modules,
+    "learning_streak": user["learning_streak"]
 }
 
 @app.post("/profile/update")
@@ -746,6 +792,8 @@ def get_jobs():
 
     return "Search to get job results"   
 
+import time
+
 @app.post("/ai/chat")
 def chat_ai(
     data: ChatRequest,
@@ -753,14 +801,36 @@ def chat_ai(
 ):
 
     token = credentials.credentials
-    user_id = verify_token(token)
-    print(user_id, data.message)
-    response = ask_bot(user_id, data.message)
+    email = verify_token(token)
+
+    start = time.time()
+
+    response = ask_bot(email, data.message)
+
+    response_time = round(time.time() - start, 2)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # store user message
+    cursor.execute(
+        "INSERT INTO chat_messages (user_email, role, message, created_at) VALUES (?, ?, ?, ?)",
+        (email, "user", data.message, datetime.utcnow().isoformat())
+    )
+
+    # store AI response
+    cursor.execute(
+        "INSERT INTO chat_messages (user_email, role, message, response_time, created_at) VALUES (?, ?, ?, ?, ?)",
+        (email, "ai", response, response_time, datetime.utcnow().isoformat())
+    )
+
+    conn.commit()
+    conn.close()
 
     return {
-        "reply": response
+        "reply": response,
+        "response_time": response_time
     }
-
 INTERVIEW_SESSIONS = {}
 @app.post("/interview/start")
 def start_interview(data: InterviewStart):
@@ -786,6 +856,33 @@ def start_interview(data: InterviewStart):
     "difficulty": data.difficulty,
     "question_number": 1
 }
+
+@app.get("/ai/history")
+def get_chat_history(credentials: HTTPAuthorizationCredentials = Depends(security)):
+
+    email = verify_token(credentials.credentials)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT role, message, response_time FROM chat_messages WHERE user_email=? ORDER BY id",
+        (email,)
+    )
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    messages = [
+        {
+            "role": r["role"],
+            "content": r["message"],
+            "responseTime": r["response_time"]
+        }
+        for r in rows
+    ]
+
+    return {"messages": messages}
 
 @app.post("/roadmap/save")
 def save_roadmap(

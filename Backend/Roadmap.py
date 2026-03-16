@@ -151,7 +151,10 @@ Rules:
             concepts = getattr(response,category)
             for concept in concepts:
                 search_result = self.tavily.invoke({"query": concept.search_query})
-                concept.learning_link =search_result['results'][0]['url']
+                if search_result.get("results"):
+                    concept.learning_link = search_result["results"][0]["url"]
+                else:
+                    concept.learning_link = None
 
         return response.model_dump()
     
