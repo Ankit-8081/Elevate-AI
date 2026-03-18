@@ -203,7 +203,7 @@ You will be provided with the user's resume content. Analyze it and produce the 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex="https://.*\\.trycloudflare\\.com",
+    allow_origin_regex=".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1451,3 +1451,9 @@ async def submit_answer(
     "difficulty": next_difficulty,
     "question_number": session["question_number"]
 }
+import uvicorn
+import os
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
