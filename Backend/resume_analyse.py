@@ -20,7 +20,7 @@ class WeakLineFeedback(BaseModel):
 
 class MarketReadiness(BaseModel):
     score:int = Field(description="Percentage Readiness of User")
-    market_readiness:Literal['Very weak resume','Early stage candidate','Moderate readiness','Strong candidate','Highly competitive candidate'] = Field(description="User's Overall Job Market Readiness")
+    market_readiness:Literal['Very Low','Low','Medium','High','Very High'] = Field(description="User's Overall Job Market Readiness")
     key_strengths: List[str] = Field(description="Top professional strengths found")
     critical_gaps: List[str] = Field(description="Major missing qualifications")
     missing_keywords: List[str] = Field(description="Specific technical terms missing")
