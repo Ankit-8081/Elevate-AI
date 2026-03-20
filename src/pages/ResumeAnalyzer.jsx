@@ -31,6 +31,8 @@ export default function ResumeDashboard() {
   const [analyzing, setAnalyzing] = useState(false);
   const [data, setData] = useState(null);
   const [score, setScore] = useState(0);
+  // 1. Add a state to store the best role specifically
+  const [bestRole, setBestRole] = useState("");
 
   const onUpload = async () => {
     if (!file) return;
@@ -54,7 +56,10 @@ export default function ResumeDashboard() {
       setData(res.data);
       setScore(res.data.ats_score);
 
-      
+      // 🔥 CAPTURE THE AI ROLE HERE
+      setBestRole(res.data.recommended_job);
+
+
     } catch (err) {
       console.error("Resume analysis error:", err);
     }
@@ -67,36 +72,36 @@ export default function ResumeDashboard() {
     setFile(null);
     setTargetJob("");
   };
-useEffect(() => {
+  useEffect(() => {
 
-  const token = localStorage.getItem("token");
-  if (!token) return;
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-  axios.get(`${API}/me`, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  .then(res => {
+    axios.get(`${API}/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
 
-    if (res.data.resume_analysis) {
+        if (res.data.resume_analysis) {
 
-      const analysis = res.data.resume_analysis;
+          const analysis = res.data.resume_analysis;
+          setBestRole(res.data.best_job_role);
+          setData({
+            market_readiness: analysis.market_readiness,
+            strengths: analysis.key_strengths,
+            weaknesses: analysis.critical_gaps,
+            missing_keywords: analysis.missing_keywords,
+            weak_line: analysis.weakest_line.weak_line,
+            suggestions: analysis.weakest_line.improved_version
+          });
 
-      setData({
-        market_readiness: analysis.market_readiness,
-        strengths: analysis.key_strengths,
-        weaknesses: analysis.critical_gaps,
-        missing_keywords: analysis.missing_keywords,
-        weak_line: analysis.weakest_line.weak_line,
-        suggestions: analysis.weakest_line.improved_version
-      });
+          setScore(analysis.score);
+        }
 
-      setScore(analysis.score);
-    }
+      })
+      .catch(err => console.error(err));
 
-  })
-  .catch(err => console.error(err));
-
-}, []);
+  }, []);
   const getStatusStyles = (status) => {
     const s = status?.toLowerCase() || "";
     if (s.includes("high") || s.includes("strong")) {
@@ -170,7 +175,7 @@ useEffect(() => {
                     className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all ${file
                       ? 'bg-cyan-500 text-[#050b14] hover:bg-cyan-400 shadow-xl shadow-cyan-500/20 active:scale-[0.98]'
                       : 'bg-white/5 text-slate-500 cursor-not-allowed'
-                    }`}
+                      }`}
                   >
                     <Sparkles size={18} />
                     Analyze Profile
@@ -301,10 +306,10 @@ useEffect(() => {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() =>
-navigate("/roadmap", {
-  state: { trigger: "resume" }
-})
-}
+                            navigate("/roadmap", {
+                              state: { trigger: "resume" }
+                            })
+                          }
                           className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600/20 to-purple-600/20 border border-violet-500/30 text-violet-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:from-violet-600/30 hover:to-purple-600/30 transition-all shadow-lg shadow-violet-900/20"
                         >
                           <Map size={14} />
@@ -314,10 +319,12 @@ navigate("/roadmap", {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() =>
- navigate("/Find_jobs", {
-  state: { trigger: "resume" }
-})
-}
+                            navigate("/Find_jobs", {
+                              state: {
+                                trigger: "resume",
+                                role: bestRole // 🔥 PASS THE SPECIFIC AI ROLE
+                              }
+                            })}
                           className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:from-cyan-600/30 hover:to-blue-600/30 transition-all shadow-lg shadow-cyan-900/20"
                         >
                           <BriefcaseBusiness size={14} />

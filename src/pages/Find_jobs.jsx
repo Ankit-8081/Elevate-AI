@@ -33,42 +33,37 @@ const FindJobs = () => {
     { id: "web", label: "Web Jobs", color: "bg-emerald-500" },
   ];
 
-  useEffect(() => {
+  // ... inside FindJobs component
 
+  useEffect(() => {
     const fromResume = location.state?.trigger === "resume";
+    const passedRole = location.state?.role; // 🔥 GET ROLE FROM NAVIGATION STATE
 
     if (fromResume) {
-
-      const token = localStorage.getItem("token");
-
-      axios.get(`${API}/user/best-job`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => {
-
-          const role = res.data.best_job_role;   // 🔥 AI ROLE
-
-          if (!role) return;
-
-          setSearchQuery(prev => ({
-            ...prev,
-            query: role
-          }));
-
-          autoSearch(role);
-
+      // If we already have the role passed from the previous page, use it immediately!
+      if (passedRole) {
+        setSearchQuery(prev => ({ ...prev, query: passedRole }));
+        autoSearch(passedRole);
+      } else {
+        // Fallback: If for some reason it wasn't passed, fetch it from backend
+        const token = localStorage.getItem("token");
+        axios.get(`${API}/user/best-job`, {
+          headers: { Authorization: `Bearer ${token}` }
         })
-        .catch(err => console.error(err));
+          .then(res => {
+            const role = res.data.best_job_role;
+            if (role) {
+              setSearchQuery(prev => ({ ...prev, query: role }));
+              autoSearch(role);
+            }
+          });
+      }
 
-      // clear navigation state
+      // Clean up the state so a refresh doesn't trigger auto-search again
       window.history.replaceState({}, document.title);
-
     } else {
-
       fetchJobs();
-
     }
-
   }, []);
 
   const fetchJobs = async () => {
