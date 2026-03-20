@@ -262,8 +262,8 @@ useEffect(() => {
             <StatCard icon={CheckCircle2} label="Verified Skills" value={user?.skills?.length || "0"} color="bg-yellow-500" />
             <StatCard
   icon={Zap}
-  label="Learning Streak"
-  value={`${user?.learning_streak || 0} Days`}
+  label="Login Streak"
+  value={`${user?.login_streak || 0} Days`}
   color="bg-emerald-500"
 />
             <StatCard

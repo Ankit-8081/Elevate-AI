@@ -252,7 +252,7 @@ def init_db():
         roadmap TEXT,
         created_at TEXT,
         last_active_date TEXT,
-        learning_streak INTEGER DEFAULT 1
+        learning_streak INTEGER DEFAULT 0
     )
     """)
 
@@ -355,7 +355,14 @@ CREATE TABLE IF NOT EXISTS profile_views_log (
         cursor.execute("ALTER TABLE users ADD COLUMN profile_views INTEGER DEFAULT 0")
     except:
        pass
-
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN login_streak INTEGER DEFAULT 1")
+    except:
+        pass
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN last_login_date TEXT")
+    except:
+        pass
     conn.commit()
     conn.close()
 
@@ -449,6 +456,8 @@ def signup(data: SignupRequest):
     hashed = hash_password(data.password)
     today = datetime.utcnow().date().isoformat()
 
+    login_streak = 1
+    last_login_date = today
     cursor.execute(
         """
         INSERT INTO users (
@@ -464,9 +473,11 @@ def signup(data: SignupRequest):
             professional_links,
             created_at,
             last_active_date,
-            learning_streak
+            learning_streak,
+            login_streak,
+            last_login_date
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             data.name,
@@ -481,7 +492,9 @@ def signup(data: SignupRequest):
             json.dumps([]),
             today,
             today,
-            1
+            0,
+            1,
+            today
         )
     )
 
@@ -621,7 +634,7 @@ def login(data: LoginRequest):
     cursor = conn.cursor()
 
     cursor.execute(
-    "SELECT id, name, username, linkedin, email, password, last_active_date, learning_streak FROM users WHERE email = ?",
+    "SELECT id, name, username, linkedin, email, password, last_active_date, learning_streak, login_streak, last_login_date FROM users WHERE email = ?",
     (data.email,)
 )
 
@@ -631,33 +644,38 @@ def login(data: LoginRequest):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    user_id, name, username, linkedin, email, password_hash, last_active, streak = user
+    user_id = user["id"]
+    name = user["name"]
+    username = user["username"]
+    linkedin = user["linkedin"]
+    email = user["email"]
+    password_hash = user["password"]
+
 
     if not verify_password(data.password, password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     today = datetime.utcnow().date()
 
-    if last_active:
-        last_active_date = datetime.strptime(last_active, "%Y-%m-%d").date()
-        diff = (today - last_active_date).days
+    login_streak = user["login_streak"] or 0
+    last_login = user["last_login_date"]
+
+    if last_login:
+        last_date = datetime.strptime(last_login, "%Y-%m-%d").date()
+        diff = (today - last_date).days
 
         if diff == 1:
-            streak += 1
+            login_streak += 1
         elif diff > 1:
-            streak = 1
+            login_streak = 1
     else:
-        streak = 1
+        login_streak = 1
 
-    # 🔥 SAVE STREAK
-    cursor.execute(
-        """
-        UPDATE users
-        SET last_active_date=?, learning_streak=?
-        WHERE email=?
-        """,
-        (today.isoformat(), streak, email)
-    )
+    cursor.execute("""
+    UPDATE users
+    SET last_login_date=?, login_streak=?
+    WHERE email=?
+""", (today.isoformat(), login_streak, email))
 
     conn.commit()
     conn.close()
@@ -671,9 +689,29 @@ def login(data: LoginRequest):
             "name": name,
             "username": username,
             "linkedin": linkedin,
-            "email": email
+            "email": email,
+            "login_streak": login_streak
         }
     }
+
+@app.post("/roadmap/reset")
+def reset_roadmap_streak(credentials: HTTPAuthorizationCredentials = Depends(security)):
+
+    email = verify_token(credentials.credentials)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE users
+        SET learning_streak=0, last_active_date=NULL
+        WHERE email=?
+    """, (email,))
+
+    conn.commit()
+    conn.close()
+
+    return {"message": "Streak reset"}
 @app.get("/dashboard")
 def dashboard(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
@@ -712,10 +750,10 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 
     cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
     user = cursor.fetchone()
+    if not user:
+       raise HTTPException(status_code=404, detail="User not found")
     conn.close()
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
     resume_analysis = json.loads(user["resume_analysis"]) if user["resume_analysis"] else None
         
     roadmap = json.loads(user["roadmap"]) if user["roadmap"] else []
@@ -753,7 +791,9 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     "next_milestone": milestone,
     "modules_completed": completed_modules,
     "modules_total": total_modules,
-    "learning_streak": user["learning_streak"]
+    "learning_streak": user["learning_streak"],
+    "login_streak": user["login_streak"],
+
 }
 
 @app.delete("/messages/conversation/{user_id}")
@@ -1779,6 +1819,57 @@ def change_password(
     conn.close()
 
     return {"message": "Password updated successfully"}
+
+@app.post("/streak/update")
+def update_streak(credentials: HTTPAuthorizationCredentials = Depends(security)):
+
+    email = verify_token(credentials.credentials)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT learning_streak, last_active_date
+        FROM users WHERE email=?
+    """, (email,))
+    
+    user = cursor.fetchone()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    streak = user["learning_streak"] or 0
+    last_active = user["last_active_date"]
+
+    today = datetime.utcnow().date()
+
+    if not last_active:
+        streak = 1
+
+    else:
+        last_date = datetime.strptime(last_active, "%Y-%m-%d").date()
+        diff = (today - last_date).days
+
+        if diff == 0:
+            conn.close()
+            return {"streak": streak}
+
+        elif diff == 1:
+            streak += 1
+
+        else:
+            streak = 1
+
+    cursor.execute("""
+        UPDATE users
+        SET learning_streak=?, last_active_date=?
+        WHERE email=?
+    """, (streak, today.isoformat(), email))
+
+    conn.commit()
+    conn.close()
+
+    return {"streak": streak}
 
 @app.delete("/friends/remove/{user_id}")
 def remove_friend(

@@ -16,6 +16,7 @@ import LegalPage from "./components/Policy";
 import PlatformPage from "./components/Platform";
 import ElevateAIChat from "./pages/messages";
 import ElevateFeed from "./pages/feed";
+import SkillRoadmap2 from "./pages/Roadmap2";
 
 const ProtectedRoute = ({ children }) => {
   const user = localStorage.getItem("user");
@@ -44,6 +45,8 @@ function App() {
       <Route path="/platform" element={<PlatformPage />} />
 
       <Route path="/profile/:id" element={<ProfilePage />} />
+
+      <Route path="/Roadmap2" element={<SkillRoadmap2 />} />
 
 
       <Route

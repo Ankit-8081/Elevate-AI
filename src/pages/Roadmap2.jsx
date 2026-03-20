@@ -3,12 +3,11 @@ import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Map, Zap, Brain, CheckCircle2, Sparkles, TrendingUp,
+  Map, Zap, Brain, CheckCircle2, Sparkles,
   ChevronDown, BookOpen, Clock, Download, ExternalLink, Info
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import Sidebar from '../components/sidebar';
 
 const API = import.meta.env.VITE_API_URL;
 const ROLE_SKILLS = {
@@ -18,18 +17,16 @@ const ROLE_SKILLS = {
   "DevOps Engineer": ["Docker", "Kubernetes", "CI/CD", "AWS", "Linux"]
 };
 
-const SkillRoadmap = () => {
+const SkillRoadmap2 = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
-  const [showInsights, setShowInsights] = useState(false);
   const [role, setRole] = useState("");
   const [roadmapData, setRoadmapData] = useState([]);
   const [user, setUser] = useState(null);
   const roadmapRef = useRef(null);
-  const [streak, setStreak] = useState(0);
   const highlightSkill = location.state?.highlightSkill;
   const openStageId = highlightSkill
   ? roadmapData.find(stage =>
@@ -59,34 +56,28 @@ const SkillRoadmap = () => {
 
 }, [location.state]);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    axios.get(`${API}/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => setUser(res.data))
+    .catch(err => console.error(err));
 
-
- axios.get(`${API}/me`, {
-  headers: { Authorization: `Bearer ${token}` }
-})
-.then(res => {
-  setUser(res.data);
-  setStreak(res.data.learning_streak || 0);
-})
-.catch(err => console.error(err));
-
-axios.get(`${API}/roadmap/user`, {
-  headers: { Authorization: `Bearer ${token}` }
-})
-.then(res => {
-  if (res.data && res.data.roadmap) {
-    setRoadmapData(res.data.roadmap);
-    setShowRoadmap(true);
+    axios.get(`${API}/roadmap/user`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => {
+      if (res.data?.roadmap) {
+        setRoadmapData(res.data.roadmap);
+        setShowRoadmap(true);
+      }
+    })
+    .catch(() => {});
   }
-})
-.catch(() => {});
-  }, [navigate]);
+
+}, []);
 
 useEffect(() => {
 
@@ -100,24 +91,13 @@ useEffect(() => {
 
 }, [role]);
 
-const handleStatusChange = (stageId, skillName, newStatus) => {
-
-  let wasCompleted = false;
+  const handleStatusChange = (stageId, skillName, newStatus) => {
 
   const newData = roadmapData.map(stage => {
     if (stage.id === stageId) {
-      const updatedSkills = stage.skills.map(skill => {
-
-        if (skill.name === skillName) {
-          if (skill.status === "Completed") {
-            wasCompleted = true;
-          }
-
-          return { ...skill, status: newStatus };
-        }
-
-        return skill;
-      });
+      const updatedSkills = stage.skills.map(skill =>
+        skill.name === skillName ? { ...skill, status: newStatus } : skill
+      );
 
       const completed = updatedSkills.filter(s => s.status === "Completed").length;
       const stageProgress = Math.round((completed / updatedSkills.length) * 100);
@@ -129,23 +109,15 @@ const handleStatusChange = (stageId, skillName, newStatus) => {
 
   setRoadmapData(newData);
 
-  const token = localStorage.getItem("token");
-  if (!token) return;
+ const token = localStorage.getItem("token");
 
-  axios.post(`${API}/roadmap/save`,
+if (token) {
+  axios.post(
+    `${API}/roadmap/save`,
     { roadmap: newData },
     { headers: { Authorization: `Bearer ${token}` } }
   );
-
-  if (!wasCompleted && newStatus === "Completed") {
-    axios.post(`${API}/streak/update`, {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => {
-      setStreak(res.data.streak);
-    })
-    .catch(err => console.error(err));
-  }
+}
 };
 
   const parseLearningTime = (timeStr) => {
@@ -253,22 +225,18 @@ const handleStatusChange = (stageId, skillName, newStatus) => {
 
     const token = localStorage.getItem("token");
 
-await 
-axios.post(`${API}/roadmap/save`,
-  { roadmap: formatted },
-  { headers: { Authorization: `Bearer ${token}` } }
-);
+if (token) {
+  await axios.post(`${API}/roadmap/save`,
+    { roadmap: formatted },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
 
-await axios.post(`${API}/roadmap/reset`, {}, {
-  headers: { Authorization: `Bearer ${token}` }
-});
+  const userRes = await axios.get(`${API}/me`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 
-setStreak(0); 
-
-const userRes = await axios.get(`${API}/me`, {
-  headers: { Authorization: `Bearer ${token}` }
-});
-setUser(userRes.data);
+  setUser(userRes.data);
+}
 
     } catch (err) {
       console.error(err);
@@ -304,7 +272,6 @@ setUser(userRes.data);
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-slate-200 flex font-sans">
-      <Sidebar />
 
       <main style={{ marginLeft: "var(--sidebar-width)" }} className="flex-1 flex flex-col overflow-y-auto">
         <div className="p-8 max-w-7xl mx-auto w-full">
@@ -374,7 +341,7 @@ setUser(userRes.data);
           </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-8" ref={roadmapRef}>
+              <div className="lg:col-span-8 lg:col-start-3" ref={roadmapRef}>
               <AnimatePresence mode="wait">
                 {showRoadmap ? (
                   <motion.div
@@ -401,83 +368,6 @@ setUser(userRes.data);
                 )}
               </AnimatePresence>
             </div>
-
-            <aside className="lg:col-span-4 space-y-6">
-              <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 backdrop-blur-md sticky top-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Zap size={20} className="text-yellow-400" /> AI Insights
-                  </h3>
-                  <button
-                    onClick={() => setShowInsights(!showInsights)}
-                    className={`p-2 rounded-lg transition-all ${showInsights ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
-                  >
-                    <Info size={18} />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <AnimatePresence>
-                    {showInsights && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden space-y-3"
-                      >
-                        {(!user?.skills || user.skills.length === 0) ? (
-                          <InsightItem
-                            title="Resume Needed"
-                            desc="Upload your resume in the Resume Analyzer to unlock personalized insights."
-                          />
-                        ) : (
-                          <>
-                            <InsightItem
-                              title="Skill Gaps"
-                              desc={skillGaps.length ? `You should focus on learning: ${skillGaps.slice(0, 3).join(", ")}.` : "Your core skillset already aligns well with this role."}
-                            />
-                            <InsightItem
-                              title="Job Readiness"
-                              desc={user.market_readiness === "High" ? "You appear ready for interviews." : user.market_readiness === "Medium" ? "Partially ready. Close a few gaps." : "Significant preparation needed."}
-                            />
-                          </>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <div className="pt-4 border-t border-slate-800">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-slate-400">Total Completion</span>
-                      <span className="text-sm font-bold text-blue-400">{showRoadmap ? globalProgress : (user?.skills ? Math.min(100, user.skills.length * 10) : 0)}%</span>
-                    </div>
-                    <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${showRoadmap ? globalProgress : (user?.skills ? Math.min(100, user.skills.length * 10) : 0)}%` }}
-                        className="h-full bg-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 mt-4">
-                    <StatBox
-  label="Streak"
-  value={`${streak} Days`}
-  icon={<TrendingUp size={14} />}
-  color="text-orange-400"
-/>
-                    <StatBox
-                      label="Modules Completed"
-                      value={`${totalCompleted}/${allSkills.length}`}
-                      icon={<CheckCircle2 size={14} />}
-                      color="text-green-400"
-                    />
-                    
-                  </div>
-                </div>
-              </div>
-            </aside>
           </div>
         </div>
       </main>
@@ -490,11 +380,15 @@ const StageCard = ({ stage, index, onStatusChange, highlightSkill, openStageId }
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="relative pl-8 border-l-2 border-slate-800"
-    >
+  initial={{ opacity: 0, x: -20 }}
+  animate={{ opacity: 1, x: 0 }}
+  transition={{ delay: index * 0.1 }}
+  className="relative pl-8"
+>
+  <div className="absolute left-0 top-0 h-full w-8">
+    <div className="absolute left-4 top-0 w-[2px] h-full bg-slate-800" />
+    <div className="absolute top-3 left-4 h-[2px] w-full bg-slate-800" />
+  </div>
       <div className={`absolute -left-[9px] top-0 h-4 w-4 rounded-full border-2 border-slate-900 transition-colors ${stage.progress === 100 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]'}`} />
 
       <div className="bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden hover:border-slate-700 transition-colors">
@@ -663,4 +557,4 @@ const StatBox = ({ label, value, icon, color }) => (
   </div>
 );
 
-export default SkillRoadmap;
+export default SkillRoadmap2;
