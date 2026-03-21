@@ -3,13 +3,14 @@ import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Map, Zap, Brain, CheckCircle2, Sparkles,
-  ChevronDown, BookOpen, Clock, Download, ExternalLink, Info
+  Map, Zap, Brain, CheckCircle2, Sparkles, TrendingUp,
+  ChevronDown, BookOpen, Clock, Download, ExternalLink, Info,
+  Mic, MicOff, Globe, HardHat
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 const API = import.meta.env.VITE_API_URL;
+
 const ROLE_SKILLS = {
   "AI Engineer": ["Python", "PyTorch", "Transformers", "MLOps", "Deep Learning"],
   "Backend Developer": ["Node.js", "Databases", "API Design", "Docker", "System Design"],
@@ -17,331 +18,992 @@ const ROLE_SKILLS = {
   "DevOps Engineer": ["Docker", "Kubernetes", "CI/CD", "AWS", "Linux"]
 };
 
-const SkillRoadmap2 = () => {
+const LANGUAGES = [
+  { code: "en", label: "English", dir: "ltr", speechCode: "en-US" },
+  { code: "hi", label: "हिन्दी", dir: "ltr", speechCode: "hi-IN" },
+  { code: "es", label: "Español", dir: "ltr", speechCode: "es-ES" },
+  { code: "fr", label: "Français", dir: "ltr", speechCode: "fr-FR" },
+  { code: "ar", label: "العربية", dir: "rtl", speechCode: "ar-SA" },
+  { code: "bn", label: "বাংলা", dir: "ltr", speechCode: "bn-BD" },
+];
 
+
+const T = {
+  en: {
+    title: "Skill Path Architect",
+    subtitle: "AI-powered career mapping for skilled workers.",
+    targetRole: "Your Job / Trade",
+    placeholder: "e.g. Electrician, Welder, Plumber...",
+    experience: "Experience",
+    domainFocus: "Domain Focus",
+    generate: "Generate Roadmap",
+    generating: "Generating...",
+    download: "Download Path",
+    empty: "Define your trade above to visualize your learning path.",
+    aiInsights: "AI Insights",
+    totalCompletion: "Total Completion",
+    streak: "Streak",
+    modules: "Modules",
+    resumeNeeded: "Resume Needed",
+    resumeNeededDesc: "Upload your resume in the Resume Analyzer to unlock personalized insights.",
+    skillGaps: "Skill Gaps",
+    jobReadiness: "Job Readiness",
+    progress: "Progress",
+    notStarted: "Not Started",
+    inProgress: "In Progress",
+    completed: "Completed",
+    easy: "Easy",
+    medium: "Medium",
+    hard: "Hard",
+    docs: "Docs",
+    micTip: "Listening... speak now",
+    stage1: "Step 1: The Basics",
+    stage2: "Step 2: Core Skills",
+    stage3: "Step 3: Advanced Work",
+    beginner: "Beginner",
+    intermediate: "Intermediate",
+    advanced: "Advanced",
+    projectBased: "Project Based",
+    theoryFirst: "Theory First",
+    balanced: "Balanced",
+    fastTrack: "Fast Track",
+    deepDive: "Deep Dive",
+    days: "Days",
+    language: "Language",
+  },
+  hi: {
+    title: "स्किल पाथ आर्किटेक्ट",
+    subtitle: "कुशल कारीगरों के लिए AI करियर मैपिंग।",
+    targetRole: "आपका काम / ट्रेड",
+    placeholder: "जैसे: इलेक्ट्रीशियन, वेल्डर, प्लम्बर...",
+    experience: "अनुभव",
+    domainFocus: "डोमेन फोकस",
+    generate: "रोडमैप बनाएं",
+    generating: "बन रहा है...",
+    download: "डाउनलोड करें",
+    empty: "अपना ट्रेड ऊपर दर्ज करें।",
+    aiInsights: "AI अंतर्दृष्टि",
+    totalCompletion: "कुल प्रगति",
+    streak: "स्ट्रीक",
+    modules: "मॉड्यूल",
+    resumeNeeded: "रिज्यूमे चाहिए",
+    resumeNeededDesc: "व्यक्तिगत अंतर्दृष्टि के लिए रिज्यूमे अपलोड करें।",
+    skillGaps: "स्किल गैप्स",
+    jobReadiness: "नौकरी तैयारी",
+    progress: "प्रगति",
+    notStarted: "शुरू नहीं",
+    inProgress: "जारी है",
+    completed: "हो गया ✓",
+    easy: "आसान",
+    medium: "मध्यम",
+    hard: "कठिन",
+    docs: "गाइड",
+    micTip: "सुन रहा है... बोलें",
+    stage1: "चरण 1: बुनियाद",
+    stage2: "चरण 2: मुख्य कौशल",
+    stage3: "चरण 3: उन्नत कार्य",
+    beginner: "नौसिखिया",
+    intermediate: "मध्यम",
+    advanced: "उन्नत",
+    projectBased: "प्रोजेक्ट आधारित",
+    theoryFirst: "सिद्धांत पहले",
+    balanced: "संतुलित",
+    fastTrack: "फास्ट ट्रैक",
+    deepDive: "गहन अध्ययन",
+    days: "दिन",
+    language: "भाषा",
+  },
+  es: {
+    title: "Arquitecto de Habilidades",
+    subtitle: "Mapeo de carrera con IA para trabajadores calificados.",
+    targetRole: "Tu Trabajo / Oficio",
+    placeholder: "ej. Electricista, Soldador, Plomero...",
+    experience: "Experiencia",
+    domainFocus: "Enfoque",
+    generate: "Generar Hoja de Ruta",
+    generating: "Generando...",
+    download: "Descargar",
+    empty: "Ingresa tu oficio arriba para comenzar.",
+    aiInsights: "Perspectivas IA",
+    totalCompletion: "Completado Total",
+    streak: "Racha",
+    modules: "Módulos",
+    resumeNeeded: "Currículum Necesario",
+    resumeNeededDesc: "Sube tu currículum para obtener perspectivas personalizadas.",
+    skillGaps: "Brechas de Habilidades",
+    jobReadiness: "Preparación Laboral",
+    progress: "Progreso",
+    notStarted: "Sin Empezar",
+    inProgress: "En Progreso",
+    completed: "Completado ✓",
+    easy: "Fácil",
+    medium: "Medio",
+    hard: "Difícil",
+    docs: "Guía",
+    micTip: "Escuchando... habla ahora",
+    stage1: "Paso 1: Lo Básico",
+    stage2: "Paso 2: Habilidades Clave",
+    stage3: "Paso 3: Trabajo Avanzado",
+    beginner: "Principiante",
+    intermediate: "Intermedio",
+    advanced: "Avanzado",
+    projectBased: "Por Proyectos",
+    theoryFirst: "Teoría Primero",
+    balanced: "Equilibrado",
+    fastTrack: "Ruta Rápida",
+    deepDive: "Profundo",
+    days: "Días",
+    language: "Idioma",
+  },
+  fr: {
+    title: "Architecte de Compétences",
+    subtitle: "Cartographie de carrière IA pour les travailleurs qualifiés.",
+    targetRole: "Votre Métier",
+    placeholder: "ex. Électricien, Soudeur, Plombier...",
+    experience: "Expérience",
+    domainFocus: "Domaine",
+    generate: "Générer la Feuille de Route",
+    generating: "Génération...",
+    download: "Télécharger",
+    empty: "Entrez votre métier ci-dessus pour commencer.",
+    aiInsights: "Insights IA",
+    totalCompletion: "Complétion Totale",
+    streak: "Série",
+    modules: "Modules",
+    resumeNeeded: "CV Requis",
+    resumeNeededDesc: "Téléchargez votre CV pour des insights personnalisés.",
+    skillGaps: "Lacunes",
+    jobReadiness: "Préparation",
+    progress: "Progrès",
+    notStarted: "Pas commencé",
+    inProgress: "En cours",
+    completed: "Terminé ✓",
+    easy: "Facile",
+    medium: "Moyen",
+    hard: "Difficile",
+    docs: "Guide",
+    micTip: "Écoute... parlez maintenant",
+    stage1: "Étape 1 : Les Bases",
+    stage2: "Étape 2 : Compétences Clés",
+    stage3: "Étape 3 : Travail Avancé",
+    beginner: "Débutant",
+    intermediate: "Intermédiaire",
+    advanced: "Avancé",
+    projectBased: "Par Projets",
+    theoryFirst: "Théorie d'abord",
+    balanced: "Équilibré",
+    fastTrack: "Accéléré",
+    deepDive: "Approfondi",
+    days: "Jours",
+    language: "Langue",
+  },
+  ar: {
+    title: "مهندس مسار المهارات",
+    subtitle: "رسم خرائط المهنة بالذكاء الاصطناعي للعمال المهرة.",
+    targetRole: "وظيفتك / مهنتك",
+    placeholder: "مثال: كهربائي، لحام، سباك...",
+    experience: "الخبرة",
+    domainFocus: "التركيز",
+    generate: "إنشاء خارطة الطريق",
+    generating: "جارٍ الإنشاء...",
+    download: "تنزيل",
+    empty: "أدخل مهنتك أعلاه للبدء.",
+    aiInsights: "رؤى الذكاء الاصطناعي",
+    totalCompletion: "الإتمام الكلي",
+    streak: "التسلسل",
+    modules: "وحدات",
+    resumeNeeded: "السيرة الذاتية مطلوبة",
+    resumeNeededDesc: "ارفع سيرتك الذاتية للحصول على رؤى مخصصة.",
+    skillGaps: "الفجوات المهارية",
+    jobReadiness: "الاستعداد الوظيفي",
+    progress: "التقدم",
+    notStarted: "لم يبدأ",
+    inProgress: "قيد التنفيذ",
+    completed: "مكتمل ✓",
+    easy: "سهل",
+    medium: "متوسط",
+    hard: "صعب",
+    docs: "دليل",
+    micTip: "يستمع... تحدث الآن",
+    stage1: "الخطوة 1: الأساسيات",
+    stage2: "الخطوة 2: المهارات الأساسية",
+    stage3: "الخطوة 3: العمل المتقدم",
+    beginner: "مبتدئ",
+    intermediate: "متوسط",
+    advanced: "متقدم",
+    projectBased: "مشروع عملي",
+    theoryFirst: "النظرية أولاً",
+    balanced: "متوازن",
+    fastTrack: "مسار سريع",
+    deepDive: "دراسة معمقة",
+    days: "أيام",
+    language: "اللغة",
+  },
+  bn: {
+    title: "স্কিল পাথ আর্কিটেক্ট",
+    subtitle: "দক্ষ কর্মীদের জন্য AI ক্যারিয়ার ম্যাপিং।",
+    targetRole: "আপনার কাজ / ট্রেড",
+    placeholder: "যেমন: ইলেকট্রিশিয়ান, ওয়েল্ডার, প্লাম্বার...",
+    experience: "অভিজ্ঞতা",
+    domainFocus: "ডোমেন ফোকাস",
+    generate: "রোডম্যাপ তৈরি করুন",
+    generating: "তৈরি হচ্ছে...",
+    download: "ডাউনলোড করুন",
+    empty: "আপনার ট্রেড উপরে লিখুন।",
+    aiInsights: "AI অন্তর্দৃষ্টি",
+    totalCompletion: "মোট সম্পন্ন",
+    streak: "স্ট্রিক",
+    modules: "মডিউল",
+    resumeNeeded: "রেজুমে দরকার",
+    resumeNeededDesc: "ব্যক্তিগত অন্তর্দৃষ্টির জন্য রেজুমে আপলোড করুন।",
+    skillGaps: "দক্ষতার ঘাটতি",
+    jobReadiness: "কাজের প্রস্তুতি",
+    progress: "অগ্রগতি",
+    notStarted: "শুরু হয়নি",
+    inProgress: "চলছে",
+    completed: "সম্পন্ন ✓",
+    easy: "সহজ",
+    medium: "মাঝারি",
+    hard: "কঠিন",
+    docs: "গাইড",
+    micTip: "শুনছে... এখন বলুন",
+    stage1: "ধাপ ১: মূল বিষয়",
+    stage2: "ধাপ ২: মূল দক্ষতা",
+    stage3: "ধাপ ৩: উন্নত কাজ",
+    beginner: "নতুন",
+    intermediate: "মাঝারি",
+    advanced: "উন্নত",
+    projectBased: "প্রজেক্ট ভিত্তিক",
+    theoryFirst: "তত্ত্ব আগে",
+    balanced: "সুষম",
+    fastTrack: "দ্রুত পথ",
+    deepDive: "গভীর অধ্যয়ন",
+    days: "দিন",
+    language: "ভাষা",
+  },
+};
+
+const SkillRoadmap2 = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
   const [role, setRole] = useState("");
   const [roadmapData, setRoadmapData] = useState([]);
   const [user, setUser] = useState(null);
+  const [streak, setStreak] = useState(0);
+  const [language, setLanguage] = useState("en");
+  const [isListening, setIsListening] = useState(false);
+  const [micSupported, setMicSupported] = useState(true);
   const roadmapRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+
   const highlightSkill = location.state?.highlightSkill;
   const openStageId = highlightSkill
-  ? roadmapData.find(stage =>
-      stage.skills?.some(s => s.name === highlightSkill)
-    )?.id
-  : null;
+    ? roadmapData.find(stage => stage.skills?.some(s => s.name === highlightSkill))?.id
+    : null;
+
   const [experience, setExperience] = useState("Beginner");
-  const [learningStyle, setLearningStyle] = useState("Project Based");;
+  const [learningStyle, setLearningStyle] = useState("Project Based");
+
+  const t = T[language] || T.en;
+  const langDir = LANGUAGES.find(l => l.code === language)?.dir || "ltr";
+
+ const toggleMic = async () => {
+  if (isListening) {
+    mediaRecorderRef.current.stop();
+    setIsListening(false);
+  } else {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (e) => {
+        audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
+
+        const formData = new FormData();
+        formData.append("file", audioBlob);
+        formData.append("language", language);
+
+        try {
+          const res = await axios.post(`${API}/audio/process`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+
+          const detectedRole = res.data.english_translation;
+          setShowRoadmap(false);
+          setRoadmapData([]);
+          setRole(detectedRole); 
+        } catch (err) {
+          console.error("Audio processing error:", err);
+        }
+      };
+
+      mediaRecorderRef.current.start();
+      setIsListening(true);
+
+    } catch (err) {
+      console.error("Mic error:", err);
+    }
+  }
+};
+
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (location.state?.trigger === "resume") {
+      axios.get(`${API}/me`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => { if (res.data.target_role) setRole(res.data.target_role); });
+    }
+  }, [location.state]);
 
-  const token = localStorage.getItem("token");
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {return;}
+    axios.get(`${API}/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => { setUser(res.data); setStreak(res.data.learning_streak || 0); })
+      .catch(err => console.error(err));
+    axios.get(`${API}/roadmap/user`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => { if (res.data?.roadmap) { setRoadmapData(res.data.roadmap); setShowRoadmap(true); } })
+      .catch(() => {});
+  }, [navigate]);
 
-  if (location.state?.trigger === "resume") {
-
-    axios.get(`${API}/me`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => {
-
-      if (res.data.target_role) {
-        setRole(res.data.target_role);
-      }
-
-    });
-
-  }
-
-}, [location.state]);
-
-useEffect(() => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    axios.get(`${API}/me`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => setUser(res.data))
-    .catch(err => console.error(err));
-
-    axios.get(`${API}/roadmap/user`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => {
-      if (res.data?.roadmap) {
-        setRoadmapData(res.data.roadmap);
-        setShowRoadmap(true);
-      }
-    })
-    .catch(() => {});
-  }
-
-}, []);
-
-useEffect(() => {
-
-  if (
-    location.state?.trigger === "resume" &&
-    role.trim() !== "" &&
-    !showRoadmap
-  ) {
-    handleGenerate();
-  }
-
-}, [role]);
+  useEffect(() => {
+    if (role.trim() !== "" && !showRoadmap) {
+      handleGenerate();
+    }
+  }, [role]);
 
   const handleStatusChange = (stageId, skillName, newStatus) => {
-
-  const newData = roadmapData.map(stage => {
-    if (stage.id === stageId) {
-      const updatedSkills = stage.skills.map(skill =>
-        skill.name === skillName ? { ...skill, status: newStatus } : skill
-      );
-
-      const completed = updatedSkills.filter(s => s.status === "Completed").length;
-      const stageProgress = Math.round((completed / updatedSkills.length) * 100);
-
-      return { ...stage, skills: updatedSkills, progress: stageProgress };
+    let wasCompleted = false;
+    const newData = roadmapData.map(stage => {
+      if (stage.id === stageId) {
+        const updatedSkills = stage.skills.map(skill => {
+          if (skill.name === skillName) {
+            if (skill.status === "Completed") wasCompleted = true;
+            return { ...skill, status: newStatus };
+          }
+          return skill;
+        });
+        const completed = updatedSkills.filter(s => s.status === "Completed").length;
+        return { ...stage, skills: updatedSkills, progress: Math.round((completed / updatedSkills.length) * 100) };
+      }
+      return stage;
+    });
+    setRoadmapData(newData);
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    localStorage.setItem("roadmap", JSON.stringify(newData));
+    if (!wasCompleted && newStatus === "Completed") {
+      axios.post(`${API}/streak/update`, {}, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => setStreak(res.data.streak))
+        .catch(err => console.error(err));
     }
-    return stage;
-  });
-
-  setRoadmapData(newData);
-
- const token = localStorage.getItem("token");
-
-if (token) {
-  axios.post(
-    `${API}/roadmap/save`,
-    { roadmap: newData },
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-}
-};
+  };
 
   const parseLearningTime = (timeStr) => {
     if (!timeStr) return 0;
-
     const lower = timeStr.toLowerCase();
-
     if (lower.includes("-")) {
       const parts = lower.split("-");
       const first = parseFloat(parts[0]);
       const second = parseFloat(parts[1]);
-      if (!isNaN(first) && !isNaN(second)) {
-        return (first + second) / 2;
-      }
+      if (!isNaN(first) && !isNaN(second)) return (first + second) / 2;
     }
-
-    if (lower.includes("min")) {
-      const num = parseFloat(lower);
-      return num / 60;
-    }
-
-    // days
-    if (lower.includes("day")) {
-      const num = parseFloat(lower);
-      return num * 6; // assume 6h/day
-    }
-
-    // hours
+    if (lower.includes("min")) return parseFloat(lower) / 60;
+    if (lower.includes("day")) return parseFloat(lower) * 6;
     const num = parseFloat(lower);
     return isNaN(num) ? 0 : num;
   };
 
   const calculateWeeks = (concepts) => {
-    const totalHours = concepts.reduce((sum, c) => {
-      return sum + parseLearningTime(c.learning_time);
-    }, 0);
-
-    const weeks = Math.ceil(totalHours / 10);
-    return `${weeks} Weeks`;
+    const totalHours = concepts.reduce((sum, c) => sum + parseLearningTime(c.learning_time), 0);
+    return `${Math.ceil(totalHours / 10)} Weeks`;
   };
 
+  const formatRoadmapText = () => {
+  let content = `${role.toUpperCase()} ROADMAP\n\n`;
+
+  roadmapData.forEach((stage, i) => {
+    content += `STAGE ${i + 1}: ${stage.title}\n`;
+    content += `Duration: ${stage.duration}\n\n`;
+
+    stage.skills.forEach((skill, idx) => {
+      content += `${idx + 1}. ${skill.name}\n`;
+      content += `   Difficulty: ${skill.difficulty}\n`;
+      content += `   Time: ${skill.time}\n`;
+      content += `   Status: ${skill.status}\n\n`;
+    });
+
+    content += `--------------------------------------\n\n`;
+  });
+
+  return content;
+};
   const handleGenerate = async () => {
-
-    if (!role.trim()) {
-      alert("Please enter a target role");
-      return;
-    }
-
+    if (!role.trim()) { alert("Please enter a target role"); return; }
     setLoading(true);
-
     try {
       const res = await axios.post(`${API}/roadmap`, {
         topic: role,
         experience_level: experience,
         learning_style: learningStyle,
-        upper_limit: 5  });
-
+        limit: 8,
+        language: language,
+      });
       const data = res.data;
-
+      const stageTitles = [t.stage1, t.stage2, t.stage3];
       const formatted = [
         {
           id: 1,
-          title: "Foundations",
+          title: stageTitles[0],
           duration: calculateWeeks(data.basic),
           progress: 0,
           skills: data.basic.map(c => ({
-            name: c.title,
-            difficulty: c.toughness,
-            time: c.learning_time,
-            status: "Not Started",
+            name: c.title, difficulty: c.toughness, time: c.learning_time, status: "Not Started",
             url: c.learning_link || `https://www.youtube.com/results?search_query=${encodeURIComponent(c.title)}`
           }))
         },
         {
           id: 2,
-          title: "Core Skills",
+          title: stageTitles[1],
           duration: calculateWeeks(data.core),
           progress: 0,
           skills: data.core.map(c => ({
-            name: c.title,
-            difficulty: c.toughness,
-            time: c.learning_time,
-            status: "Not Started",
+            name: c.title, difficulty: c.toughness, time: c.learning_time, status: "Not Started",
             url: c.learning_link || `https://www.youtube.com/results?search_query=${encodeURIComponent(c.title)}`
           }))
         },
         {
           id: 3,
-          title: "Advanced Topics",
+          title: stageTitles[2],
           duration: calculateWeeks(data.advanced),
           progress: 0,
           skills: data.advanced.map(c => ({
-            name: c.title,
-            difficulty: c.toughness,
-            time: c.learning_time,
-            status: "Not Started",
+            name: c.title, difficulty: c.toughness, time: c.learning_time, status: "Not Started",
             url: c.learning_link || `https://www.youtube.com/results?search_query=${encodeURIComponent(c.title)}`
           }))
         }
       ];
-
-     setRoadmapData(formatted);
-     setShowRoadmap(true);
-
-
-    const token = localStorage.getItem("token");
-
-if (token) {
-  await axios.post(`${API}/roadmap/save`,
-    { roadmap: formatted },
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-
-  const userRes = await axios.get(`${API}/me`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-
-  setUser(userRes.data);
-}
-
+      setRoadmapData(formatted);
+      setShowRoadmap(true);
+      localStorage.setItem("roadmap", JSON.stringify(formatted));
+      setStreak(0);
     } catch (err) {
       console.error(err);
     }
-
     setLoading(false);
   };
+useEffect(() => {
+  const savedRoadmap = localStorage.getItem("roadmap");
 
-  const downloadRoadmap = async () => {
-    if (!roadmapRef.current) return;
-    const canvas = await html2canvas(roadmapRef.current, {
-      backgroundColor: "#0a0a0c",
-      scale: 2,
+  if (savedRoadmap) {
+    const parsed = JSON.parse(savedRoadmap);
+    setRoadmapData(parsed);
+    setShowRoadmap(true);
+  }
+}, []);
+const downloadRoadmap = () => {
+  const pdf = new jsPDF();
+  let y = 20;
+
+  // 🎯 HEADER BAR
+  pdf.setFillColor(37, 99, 235);
+  pdf.rect(0, 0, 210, 25, "F");
+
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFont("Helvetica", "Bold");
+  pdf.setFontSize(18);
+  pdf.text(`${role.toUpperCase()} ROADMAP`, 10, 15);
+
+  y = 35;
+
+  roadmapData.forEach((stage, i) => {
+    // PAGE BREAK
+    if (y > 260) {
+      pdf.addPage();
+      y = 20;
+    }
+
+    // 📦 STAGE CONTAINER
+    pdf.setFillColor(245, 247, 250);
+    pdf.roundedRect(10, y, 190, 14, 4, 4, "F");
+
+    pdf.setTextColor(0);
+    pdf.setFont("Helvetica", "Bold");
+    pdf.setFontSize(13);
+    pdf.text(`Stage ${i + 1}: ${stage.title}`, 14, y + 9);
+
+    y += 18;
+
+    // ⏱ Duration
+    pdf.setFont("Helvetica", "Normal");
+    pdf.setFontSize(10);
+    pdf.setTextColor(100);
+    pdf.text(`Duration: ${stage.duration}`, 14, y);
+
+    y += 10;
+
+    stage.skills.forEach((skill, idx) => {
+      if (y > 270) {
+        pdf.addPage();
+        y = 20;
+      }
+
+      // 🧩 SKILL BOX BACKGROUND
+      pdf.setFillColor(250, 250, 250);
+      pdf.roundedRect(12, y - 4, 186, 16, 3, 3, "F");
+
+      // 🔢 Skill Title
+      pdf.setFont("Helvetica", "Bold");
+      pdf.setTextColor(20);
+      pdf.setFontSize(11);
+      pdf.text(`${idx + 1}. ${skill.name}`, 16, y + 2);
+
+      // 🎨 Difficulty badge
+      let color = [34, 197, 94];
+      if (skill.difficulty?.toLowerCase() === "medium") color = [234, 179, 8];
+      if (skill.difficulty?.toLowerCase() === "hard") color = [239, 68, 68];
+
+      pdf.setFillColor(...color);
+      pdf.roundedRect(150, y - 2, 35, 6, 2, 2, "F");
+
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(8);
+      pdf.text(skill.difficulty || "Easy", 152, y + 2);
+
+      y += 6;
+
+      // ⏱ Time + Status
+      pdf.setTextColor(80);
+      pdf.setFontSize(9);
+      pdf.text(`Time: ${skill.time}`, 16, y);
+
+      pdf.text(`Status: ${skill.status}`, 80, y);
+
+      y += 6;
+
+      // 🔗 Resource (wrapped)
+      if (skill.url) {
+        pdf.setTextColor(37, 99, 235);
+        pdf.setFontSize(8);
+
+        const link = pdf.splitTextToSize(skill.url, 160);
+        pdf.text(link, 16, y);
+
+        y += link.length * 4;
+      }
+
+      y += 6;
     });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    const fileRole = role ? role.replace(/\s+/g, "_") : "Career";
-    pdf.save(`${fileRole}_Roadmap.pdf`);
-  };
 
+    // divider
+    pdf.setDrawColor(220);
+    pdf.line(10, y, 200, y);
+    y += 10;
+  });
+
+  pdf.save(`${(role || "Career").replace(/\s+/g, "_")}_Premium_Roadmap.pdf`);
+};
   const normalizedRole = role.trim();
   const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
-  const skillGaps = user?.skills
-    ? requiredSkills.filter(skill => !user.skills.includes(skill))
-    : [];
-
+  const skillGaps = user?.skills ? requiredSkills.filter(skill => !user.skills.includes(skill)) : [];
   const allSkills = roadmapData.flatMap(s => s.skills);
   const totalCompleted = allSkills.filter(s => s.status === "Completed").length;
   const globalProgress = allSkills.length > 0 ? Math.round((totalCompleted / allSkills.length) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] text-slate-200 flex font-sans">
+    <div dir={langDir} className="min-h-screen bg-[#0a0a0c] text-slate-200 flex font-sans">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
-      <main style={{ marginLeft: "var(--sidebar-width)" }} className="flex-1 flex flex-col overflow-y-auto">
+        .sr-root { font-family: 'Space Grotesk', sans-serif; }
+
+        .sr-input {
+          width: 100%;
+          background: #1e1e2a;
+          border: 1px solid #2a2a3d;
+          border-radius: 8px;
+          padding: 10px 14px;
+          color: #e2e8f0;
+          font-size: 13px;
+          outline: none;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .sr-input::placeholder { color: #4a5568; }
+        .sr-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+
+        .sr-select {
+          width: 100%;
+          background: #1e1e2a;
+          border: 1px solid #2a2a3d;
+          border-radius: 8px;
+          padding: 10px 14px;
+          color: #e2e8f0;
+          font-size: 13px;
+          outline: none;
+          cursor: pointer;
+          transition: border-color 0.2s;
+          appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 12px center;
+          padding-right: 36px;
+        }
+        .sr-select:focus { border-color: #3b82f6; }
+        .sr-select option { background: #1a1a2e; }
+
+        .sr-label {
+          display: block;
+          font-size: 10px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #4a5568;
+          margin-bottom: 6px;
+        }
+
+        .sr-btn-primary {
+          width: 100%;
+          background: linear-gradient(135deg, #3b82f6, #6366f1);
+          color: white;
+          font-weight: 600;
+          font-size: 13px;
+          border: none;
+          border-radius: 8px;
+          height: 42px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+        .sr-btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(59,130,246,0.35); }
+        .sr-btn-primary:active { transform: translateY(0); }
+
+        .sr-btn-secondary {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: #1e1e2a;
+          border: 1px solid #2a2a3d;
+          color: #e2e8f0;
+          font-size: 13px;
+          font-weight: 600;
+          border-radius: 8px;
+          padding: 8px 16px;
+          cursor: pointer;
+          transition: background 0.2s, border-color 0.2s;
+          white-space: nowrap;
+        }
+        .sr-btn-secondary:hover { background: #252536; border-color: #3b82f6; }
+
+        .sr-mic-btn {
+          flex-shrink: 0;
+          width: 42px;
+          height: 42px;
+          border-radius: 8px;
+          border: 1px solid #2a2a3d;
+          background: #1e1e2a;
+          color: #6b7280;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+        .sr-mic-btn.listening {
+          background: rgba(239,68,68,0.12);
+          border-color: #ef4444;
+          color: #ef4444;
+          animation: micPulse 1.2s ease-in-out infinite;
+        }
+        .sr-mic-btn:hover:not(.listening) { border-color: #3b82f6; color: #3b82f6; }
+
+        @keyframes micPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+          50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+        }
+
+        .sr-lang-wrap {
+          min-width: 170px; 
+          width: auto;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: #1e1e2a;
+          border: 1px solid #2a2a3d;
+          position: relative;
+          border-radius: 8px;
+          padding: 6px 12px;
+          transition: border-color 0.2s;
+        }
+        .sr-lang-wrap:hover { border-color: #3b82f6; }
+
+        .sr-lang-select {
+          background: transparent;
+          padding-right: 24px;
+          width: 100%;
+          border: none;
+          text-align: left;
+          color: #e2e8f0;
+          font-size: 12px;
+          font-weight: 600;
+          z-index: 50;
+          position: relative;
+          outline: none;
+          cursor: pointer;
+          appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 0 center;
+          min-width: 120px;
+        }
+        .sr-lang-select option {
+         white-space: nowrap;
+         background: #1a1a2e; 
+         padding-left: 10px;
+         }
+
+        .sr-stage-card {
+          background: rgba(30,30,42,0.5);
+          border: 1px solid #1e1e2a;
+          border-radius: 12px;
+          overflow: visible;
+          transition: border-color 0.2s;
+        }
+        .sr-stage-card:hover { border-color: #2a2a3d; }
+
+        .sr-skill-card {
+          padding: 14px;
+          border-radius: 10px;
+          border: 1px solid rgba(42,42,61,0.5);
+          background: rgba(42,42,61,0.4);
+          transition: background 0.2s, border-color 0.2s, transform 0.15s;
+        }
+        .sr-skill-card:hover { background: rgba(42,42,61,0.65); transform: translateY(-1px); }
+        .sr-skill-card.highlighted {
+          background: rgba(239,68,68,0.08);
+          border-color: #ef4444;
+          box-shadow: 0 0 12px rgba(239,68,68,0.25);
+        }
+
+        .sr-status-select {
+          appearance: none;
+          cursor: pointer;
+          font-size: 9px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          padding: 4px 8px;
+          border-radius: 6px;
+          border: 1px solid;
+          outline: none;
+          transition: all 0.2s;
+          text-align: center;
+        }
+        .sr-status-select option { background: #0a0a0c; }
+
+        .sr-diff-badge {
+          font-size: 9px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.07em;
+          padding: 2px 7px;
+          border-radius: 4px;
+          border: 1px solid;
+        }
+
+        .sr-insight-item {
+          padding: 10px 12px;
+          background: rgba(42,42,61,0.3);
+          border-radius: 8px;
+          border: 1px solid #1e1e2a;
+        }
+
+        .sr-stat-box {
+          background: rgba(42,42,61,0.4);
+          padding: 12px;
+          border-radius: 10px;
+          border: 1px solid #1e1e2a;
+          text-align: center;
+        }
+
+        .sr-progress-bar {
+          height: 6px;
+          background: #1e1e2a;
+          border-radius: 999px;
+          overflow: visible;
+        }
+
+        .sr-form-section {
+          background: rgba(20,20,30,0.6);
+          border: 1px solid #1e1e2a;
+          border-radius: 16px;
+          padding: 20px 24px;
+          backdrop-filter: blur(12px);
+        }
+
+        .sr-aside-card {
+          background: rgba(20,20,30,0.6);
+          border: 1px solid #1e1e2a;
+          border-radius: 16px;
+          padding: 20px;
+          backdrop-filter: blur(8px);
+        }
+
+        .sr-listening-tip {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          color: #ef4444;
+          font-size: 11px;
+          font-weight: 600;
+          margin-top: 5px;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+
+        @media (max-width: 767px) {
+          .sr-form-grid { grid-template-columns: 1fr !important; }
+          .sr-skill-grid { grid-template-columns: 1fr !important; }
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .sr-spinner {
+          width: 18px; height: 18px;
+          border: 2px solid rgba(255,255,255,0.25);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+        }
+      `}</style>
+
+      
+
+      <main className="sr-root flex-1 flex flex-col overflow-y-auto">
         <div className="p-8 max-w-7xl mx-auto w-full">
+
           <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent flex items-center gap-3">
-                <Map className="text-blue-400" /> Skill Path Architect
+                <Map className="text-blue-400" /> {t.title}
               </h1>
-              <p className="text-slate-400 mt-2">AI-powered career mapping for the next generation of engineers.</p>
+              <p className="text-slate-400 mt-1 text-sm">{t.subtitle}</p>
             </div>
 
-            {showRoadmap && (
-              <button
-                onClick={downloadRoadmap}
-                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg border border-slate-700 transition-all text-sm font-semibold shadow-xl"
-              >
-                <Download size={16} /> Download Path
-              </button>
-            )}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="sr-lang-wrap">
+                <Globe size={13} className="text-slate-500 flex-shrink-0" />
+                <select
+                  className="sr-lang-select"
+                  value={language}
+                  onChange={e => setLanguage(e.target.value)}
+                  title={t.language}
+                >
+                  {LANGUAGES.map(l => (
+                    <option key={l.code} value={l.code}>
+  {"\u00A0\u00A0"}{l.label}
+</option>
+                  ))}
+                </select>
+              </div>
+
+              {showRoadmap && (
+                <button className="sr-btn-secondary" onClick={downloadRoadmap}>
+                  <Download size={14} /> {t.download}
+                </button>
+              )}
+            </div>
           </header>
 
-          <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 backdrop-blur-xl mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Target Role</label>
-                <input
-                  type="text"
-                  placeholder="Enter your target role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                />
+          <section className="sr-form-section mb-8">
+            <div
+              className="sr-form-grid"
+              style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "16px", alignItems: "end" }}
+            >
+              <div style={{ gridColumn: "span 1" }}>
+                <label className="sr-label">{t.targetRole}</label>
+                <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                  <input
+                    type="text"
+                    placeholder={t.placeholder}
+                    value={role}
+                    onChange={e => setRole(e.target.value)}
+                    className="sr-input"
+                    style={{ flex: 1 }}
+                    onKeyDown={e => e.key === "Enter" && handleGenerate()}
+                  />
+                  {micSupported && (
+                    <button
+                      onClick={toggleMic}
+                      className={`sr-mic-btn${isListening ? " listening" : ""}`}
+                      title={isListening ? t.micTip : "Speak your trade"}
+                    >
+                      {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                    </button>
+                  )}
+                </div>
+                {isListening && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="sr-listening-tip"
+                  >
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", display: "inline-block", animation: "micPulse 1s infinite" }} />
+                    {t.micTip}
+                  </motion.div>
+                )}
               </div>
+
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Experience</label>
+                <label className="sr-label">{t.experience}</label>
                 <select
                   value={experience}
-                  onChange={(e) => setExperience(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                  onChange={e => setExperience(e.target.value)}
+                  className="sr-select"
                 >
-                  <option>Beginner</option>
-                  <option>Intermediate</option>
-                  <option>Advanced</option>
+                  <option value="Beginner">{t.beginner}</option>
+                  <option value="Intermediate">{t.intermediate}</option>
+                  <option value="Advanced">{t.advanced}</option>
                 </select>
               </div>
+
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Domain Focus</label>
+                <label className="sr-label">{t.domainFocus}</label>
                 <select
                   value={learningStyle}
-                  onChange={(e) => setLearningStyle(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                  onChange={e => setLearningStyle(e.target.value)}
+                  className="sr-select"
                 >
-                  <option>Project Based</option>
-                  <option>Theory First</option>
-                  <option>Balanced</option>
-                  <option>Fast Track</option>
-                  <option>Deep Dive</option>
+                  <option value="Project Based">{t.projectBased}</option>
+                  <option value="Theory First">{t.theoryFirst}</option>
+                  <option value="Balanced">{t.balanced}</option>
+                  <option value="Fast Track">{t.fastTrack}</option>
+                  <option value="Deep Dive">{t.deepDive}</option>
                 </select>
               </div>
-              <button
-                onClick={handleGenerate}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all h-[42px]"
-              >
-                {loading ? <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Sparkles size={18} /> Generate Roadmap</>}
+
+              <button className="sr-btn-primary" onClick={handleGenerate} disabled={loading}>
+                {loading
+                  ? <><div className="sr-spinner" /> {t.generating}</>
+                  : <><Sparkles size={16} /> {t.generate}</>
+                }
               </button>
             </div>
           </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <div className="lg:col-span-8 lg:col-start-3" ref={roadmapRef}>
+            <div className="lg:col-span-8" ref={roadmapRef}>
               <AnimatePresence mode="wait">
                 {showRoadmap ? (
                   <motion.div
@@ -351,19 +1013,20 @@ if (token) {
                   >
                     {roadmapData.map((stage, index) => (
                       <StageCard
-  key={stage.id}
-  stage={stage}
-  index={index}
-  highlightSkill={highlightSkill}
-  openStageId={openStageId}
-  onStatusChange={handleStatusChange}
-/>
+                        key={stage.id}
+                        stage={stage}
+                        index={index}
+                        highlightSkill={highlightSkill}
+                        openStageId={openStageId}
+                        onStatusChange={handleStatusChange}
+                        t={t}
+                      />
                     ))}
                   </motion.div>
                 ) : (
-                  <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-2xl text-slate-500">
-                    <Brain size={48} className="mb-4 opacity-20" />
-                    <p>Define your goals above to visualize your learning path.</p>
+                  <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-2xl text-slate-500 gap-3">
+                    <Brain size={48} className="opacity-20" />
+                    <p className="text-sm text-center px-6">{t.empty}</p>
                   </div>
                 )}
               </AnimatePresence>
@@ -375,49 +1038,58 @@ if (token) {
   );
 };
 
-const StageCard = ({ stage, index, onStatusChange, highlightSkill, openStageId }) => {
+const StageCard = ({ stage, index, onStatusChange, highlightSkill, openStageId, t }) => {
   const [expanded, setExpanded] = useState(openStageId === stage.id);
 
   return (
     <motion.div
-  initial={{ opacity: 0, x: -20 }}
-  animate={{ opacity: 1, x: 0 }}
-  transition={{ delay: index * 0.1 }}
-  className="relative pl-8"
->
-  <div className="absolute left-0 top-0 h-full w-8">
-    <div className="absolute left-4 top-0 w-[2px] h-full bg-slate-800" />
-    <div className="absolute top-3 left-4 h-[2px] w-full bg-slate-800" />
-  </div>
-      <div className={`absolute -left-[9px] top-0 h-4 w-4 rounded-full border-2 border-slate-900 transition-colors ${stage.progress === 100 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]'}`} />
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className="relative pl-8 border-l-2 border-slate-800"
+    >
+      <div className={`absolute -left-[9px] top-0 h-4 w-4 rounded-full border-2 border-[#0a0a0c] transition-colors ${stage.progress === 100 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]'}`} />
 
-      <div className="bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden hover:border-slate-700 transition-colors">
+      <div className="sr-stage-card">
         <div
           className="p-5 cursor-pointer flex items-center justify-between"
           onClick={() => setExpanded(!expanded)}
         >
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Stage {stage.id}</span>
-              <h2 className="text-xl font-bold">{stage.title}</h2>
+              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">
+                {stage.title.includes(":") ? stage.title.split(":")[0] : `Stage ${stage.id}`}
+              </span>
+              <h2 className="text-lg font-bold text-slate-100">
+                {stage.title.includes(":") ? stage.title.split(":")[1]?.trim() : stage.title}
+              </h2>
             </div>
             <div className="flex items-center gap-4 text-sm text-slate-400">
-              <span className="flex items-center gap-1"><Clock size={14} /> {stage.duration}</span>
-              <span className="flex items-center gap-1"><BookOpen size={14} /> {stage.skills.length} modules</span>
+              <span className="flex items-center gap-1"><Clock size={13} /> {stage.duration}</span>
+              <span className="flex items-center gap-1"><BookOpen size={13} /> {stage.skills.length} {t.modules}</span>
             </div>
           </div>
+
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">Progress</div>
-              <div className="w-32 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">{t.progress}</div>
+              <div className="w-28 bg-slate-800 h-1.5 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${stage.progress}%` }}
-                  className={`h-full transition-colors ${stage.progress === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                  style={{
+                    height: "100%",
+                    background: stage.progress === 100 ? "#10b981" : "linear-gradient(90deg,#3b82f6,#6366f1)",
+                    borderRadius: "999px",
+                  }}
                 />
               </div>
             </div>
-            <ChevronDown className={`transition-transform text-slate-500 ${expanded ? 'rotate-180' : ''}`} size={20} />
+            <ChevronDown
+              className="text-slate-500 transition-transform"
+              style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }}
+              size={18}
+            />
           </div>
         </div>
 
@@ -425,19 +1097,25 @@ const StageCard = ({ stage, index, onStatusChange, highlightSkill, openStageId }
           {expanded && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
+              animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="px-5 pb-5 overflow-hidden"
+              style={{ overflow: "hidden" }}
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-                {stage.skills.map((skill, idx) => (
-                  <SkillCard
-                    key={idx}
-                    skill={skill}
-                    highlight={highlightSkill === skill.name}
-                    onStatusUpdate={(val) => onStatusChange(stage.id, skill.name, val)}
-                  />
-                ))}
+              <div className="px-5 pb-5">
+                <div
+                  className="sr-skill-grid"
+                  style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginTop: "8px" }}
+                >
+                  {stage.skills.map((skill, idx) => (
+                    <SkillCard
+                      key={idx}
+                      skill={skill}
+                      highlight={highlightSkill === skill.name}
+                      onStatusUpdate={val => onStatusChange(stage.id, skill.name, val)}
+                      t={t}
+                    />
+                  ))}
+                </div>
               </div>
             </motion.div>
           )}
@@ -447,114 +1125,88 @@ const StageCard = ({ stage, index, onStatusChange, highlightSkill, openStageId }
   );
 };
 
-const SkillCard = ({ skill, onStatusUpdate, highlight }) => {
-
+const SkillCard = ({ skill, onStatusUpdate, highlight, t }) => {
   const skillRef = useRef(null);
 
   useEffect(() => {
-  if (highlight && skillRef.current) {
-    setTimeout(() => {
-      skillRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
-    }, 300);
-  }
-}, [highlight]);
+    if (highlight && skillRef.current) {
+      setTimeout(() => skillRef.current.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+    }
+  }, [highlight]);
+
+  const getDiffStyle = (diff) => {
+    if (!diff) return { color: "#34d399", borderColor: "rgba(52,211,153,0.25)", background: "rgba(52,211,153,0.07)" };
+    const d = diff.toLowerCase();
+    if (d === "easy") return { color: "#34d399", borderColor: "rgba(52,211,153,0.25)", background: "rgba(52,211,153,0.07)" };
+    if (d === "medium") return { color: "#fbbf24", borderColor: "rgba(251,191,36,0.25)", background: "rgba(251,191,36,0.07)" };
+    return { color: "#f87171", borderColor: "rgba(248,113,113,0.25)", background: "rgba(248,113,113,0.07)" };
+  };
+
+  const getDiffLabel = (diff) => {
+    if (!diff) return t.easy;
+    const d = diff.toLowerCase();
+    if (d === "easy") return t.easy;
+    if (d === "medium") return t.medium;
+    return t.hard;
+  };
+
+  const getStatusStyle = (status) => {
+    if (status === "Completed") return { color: "#34d399", borderColor: "rgba(52,211,153,0.3)", background: "rgba(52,211,153,0.08)" };
+    if (status === "In Progress") return { color: "#60a5fa", borderColor: "rgba(96,165,250,0.3)", background: "rgba(96,165,250,0.08)" };
+    return { color: "#6b7280", borderColor: "rgba(107,114,128,0.3)", background: "rgba(107,114,128,0.08)" };
+  };
+
+  const getStatusLabel = (status) => {
+    if (status === "Completed") return t.completed;
+    if (status === "In Progress") return t.inProgress;
+    return t.notStarted;
+  };
+
+  const diffStyle = getDiffStyle(skill.difficulty);
+  const statusStyle = getStatusStyle(skill.status);
 
   return (
     <motion.div
       ref={skillRef}
       whileHover={{ y: -2 }}
-      className={`p-4 rounded-xl border group transition-colors
-      ${
-        highlight
-          ? "bg-red-500/10 border-red-400 shadow-[0_0_12px_rgba(239,68,68,0.6)]"
-          : "bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/60"
-      }`}
+      className={`sr-skill-card${highlight ? " highlighted" : ""}`}
     >
-      <div className="flex justify-between items-start mb-4">
-        <h4 className="font-semibold text-slate-200 text-sm leading-tight">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px", gap: "6px" }}>
+        <h4 style={{ fontSize: "12px", fontWeight: 600, color: "#e2e8f0", lineHeight: 1.3, flex: 1 }}>
           {skill.name}
         </h4>
-
-        <StatusBadge
-          status={skill.status}
-          onChange={onStatusUpdate}
-        />
+        <select
+          value={skill.status}
+          onChange={e => onStatusUpdate(e.target.value)}
+          className="sr-status-select"
+          style={{ ...statusStyle, background: statusStyle.background }}
+        >
+          <option value="Not Started">{t.notStarted}</option>
+          <option value="In Progress">{t.inProgress}</option>
+          <option value="Completed">{t.completed}</option>
+        </select>
       </div>
 
-      <div className="flex items-center justify-between text-[10px] text-slate-400">
-
-        <span className={`px-2 py-0.5 rounded border uppercase font-bold ${getDiffColor(skill.difficulty)}`}>
-          {skill.difficulty}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "5px" }}>
+        <span className="sr-diff-badge" style={diffStyle}>
+          {getDiffLabel(skill.difficulty)}
         </span>
-
-        <span className="flex items-center gap-1">
-          <Clock size={10} /> {skill.time}
+        <span style={{ display: "flex", alignItems: "center", gap: "3px", color: "#4a5568", fontSize: "10px" }}>
+          <Clock size={9} /> {skill.time}
         </span>
-
         {skill.url && (
           <a
             href={skill.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-400 font-bold hover:underline flex items-center gap-1"
+            style={{ display: "flex", alignItems: "center", gap: "3px", color: "#60a5fa", fontSize: "10px", fontWeight: 700, textDecoration: "none" }}
           >
-            Docs <ExternalLink size={10} />
+            {t.docs} <ExternalLink size={9} />
           </a>
         )}
-
       </div>
     </motion.div>
   );
 };
-
-const StatusBadge = ({ status, onChange }) => {
-  const getStatusStyles = (currentStatus) => {
-    switch (currentStatus) {
-      case "Completed":
-        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-      case "In Progress":
-        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-      default:
-        return "bg-slate-700/30 text-slate-400 border-slate-700/50";
-    }
-  };
-
-  return (
-    <select
-      value={status}
-      onChange={(e) => onChange(e.target.value)}
-      className={`appearance-none cursor-pointer text-[9px] uppercase font-black px-2 py-1 rounded-lg border outline-none transition-all ${getStatusStyles(status)}`}
-      style={{ textAlignLast: 'center' }}
-    >
-      <option value="Not Started" className="bg-[#0a0a0c]">Not Started</option>
-      <option value="In Progress" className="bg-[#0a0a0c]">In Progress</option>
-      <option value="Completed" className="bg-[#0a0a0c]">Completed</option>
-    </select>
-  );
-};
-
-const getDiffColor = (diff) => {
-  if (diff === 'Easy') return 'text-emerald-400 border-emerald-900/50 bg-emerald-900/10';
-  if (diff === 'Medium') return 'text-amber-400 border-amber-900/50 bg-amber-900/10';
-  return 'text-rose-400 border-rose-900/50 bg-rose-900/10';
-};
-
-const InsightItem = ({ title, desc }) => (
-  <div className="p-3 bg-slate-800/30 rounded-lg border border-slate-800">
-    <div className="text-[10px] font-bold text-blue-400 mb-1 uppercase tracking-wider">{title}</div>
-    <p className="text-xs text-slate-400 leading-relaxed">{desc}</p>
-  </div>
-);
-
-const StatBox = ({ label, value, icon, color }) => (
-  <div className="bg-slate-800/40 p-3 rounded-xl border border-slate-800 text-center">
-    <div className={`flex justify-center mb-1 ${color}`}>{icon}</div>
-    <div className="text-sm font-bold">{value}</div>
-    <div className="text-[10px] text-slate-500 uppercase font-semibold">{label}</div>
-  </div>
-);
 
 export default SkillRoadmap2;

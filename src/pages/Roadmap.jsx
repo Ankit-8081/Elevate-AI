@@ -6,7 +6,6 @@ import {
   Map, Zap, Brain, CheckCircle2, Sparkles, TrendingUp,
   ChevronDown, BookOpen, Clock, Download, ExternalLink, Info
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Sidebar from '../components/sidebar';
 
@@ -186,7 +185,25 @@ const handleStatusChange = (stageId, skillName, newStatus) => {
     const weeks = Math.ceil(totalHours / 10);
     return `${weeks} Weeks`;
   };
+const formatRoadmapText = () => {
+  let content = `${role.toUpperCase()} ROADMAP\n\n`;
 
+  roadmapData.forEach((stage, i) => {
+    content += `STAGE ${i + 1}: ${stage.title}\n`;
+    content += `Duration: ${stage.duration}\n\n`;
+
+    stage.skills.forEach((skill, idx) => {
+      content += `${idx + 1}. ${skill.name}\n`;
+      content += `   Difficulty: ${skill.difficulty}\n`;
+      content += `   Time: ${skill.time}\n`;
+      content += `   Status: ${skill.status}\n\n`;
+    });
+
+    content += `--------------------------------------\n\n`;
+  });
+
+  return content;
+};
   const handleGenerate = async () => {
 
     if (!role.trim()) {
@@ -201,7 +218,7 @@ const handleStatusChange = (stageId, skillName, newStatus) => {
         topic: role,
         experience_level: experience,
         learning_style: learningStyle,
-        upper_limit: 5  });
+        upper_limit: 8  });
 
       const data = res.data;
 
@@ -277,21 +294,108 @@ setUser(userRes.data);
     setLoading(false);
   };
 
-  const downloadRoadmap = async () => {
-    if (!roadmapRef.current) return;
-    const canvas = await html2canvas(roadmapRef.current, {
-      backgroundColor: "#0a0a0c",
-      scale: 2,
-    });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    const fileRole = role ? role.replace(/\s+/g, "_") : "Career";
-    pdf.save(`${fileRole}_Roadmap.pdf`);
-  };
+ const downloadRoadmap = () => {
+  const pdf = new jsPDF();
+  let y = 20;
 
+  // 🎯 HEADER BAR
+  pdf.setFillColor(37, 99, 235);
+  pdf.rect(0, 0, 210, 25, "F");
+
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFont("Helvetica", "Bold");
+  pdf.setFontSize(18);
+  pdf.text(`${role.toUpperCase()} ROADMAP`, 10, 15);
+
+  y = 35;
+
+  roadmapData.forEach((stage, i) => {
+    // PAGE BREAK
+    if (y > 260) {
+      pdf.addPage();
+      y = 20;
+    }
+
+    // 📦 STAGE CONTAINER
+    pdf.setFillColor(245, 247, 250);
+    pdf.roundedRect(10, y, 190, 14, 4, 4, "F");
+
+    pdf.setTextColor(0);
+    pdf.setFont("Helvetica", "Bold");
+    pdf.setFontSize(13);
+    pdf.text(`Stage ${i + 1}: ${stage.title}`, 14, y + 9);
+
+    y += 18;
+
+    // ⏱ Duration
+    pdf.setFont("Helvetica", "Normal");
+    pdf.setFontSize(10);
+    pdf.setTextColor(100);
+    pdf.text(`Duration: ${stage.duration}`, 14, y);
+
+    y += 10;
+
+    stage.skills.forEach((skill, idx) => {
+      if (y > 270) {
+        pdf.addPage();
+        y = 20;
+      }
+
+      // 🧩 SKILL BOX BACKGROUND
+      pdf.setFillColor(250, 250, 250);
+      pdf.roundedRect(12, y - 4, 186, 16, 3, 3, "F");
+
+      // 🔢 Skill Title
+      pdf.setFont("Helvetica", "Bold");
+      pdf.setTextColor(20);
+      pdf.setFontSize(11);
+      pdf.text(`${idx + 1}. ${skill.name}`, 16, y + 2);
+
+      // 🎨 Difficulty badge
+      let color = [34, 197, 94];
+      if (skill.difficulty?.toLowerCase() === "medium") color = [234, 179, 8];
+      if (skill.difficulty?.toLowerCase() === "hard") color = [239, 68, 68];
+
+      pdf.setFillColor(...color);
+      pdf.roundedRect(150, y - 2, 35, 6, 2, 2, "F");
+
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(8);
+      pdf.text(skill.difficulty || "Easy", 152, y + 2);
+
+      y += 6;
+
+      // ⏱ Time + Status
+      pdf.setTextColor(80);
+      pdf.setFontSize(9);
+      pdf.text(`Time: ${skill.time}`, 16, y);
+
+      pdf.text(`Status: ${skill.status}`, 80, y);
+
+      y += 6;
+
+      // 🔗 Resource (wrapped)
+      if (skill.url) {
+        pdf.setTextColor(37, 99, 235);
+        pdf.setFontSize(8);
+
+        const link = pdf.splitTextToSize(skill.url, 160);
+        pdf.text(link, 16, y);
+
+        y += link.length * 4;
+      }
+
+      y += 6;
+    });
+
+    // divider
+    pdf.setDrawColor(220);
+    pdf.line(10, y, 200, y);
+    y += 10;
+  });
+
+  pdf.save(`${(role || "Career").replace(/\s+/g, "_")}_Premium_Roadmap.pdf`);
+};
   const normalizedRole = role.trim();
   const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
   const skillGaps = user?.skills
