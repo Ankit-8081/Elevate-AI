@@ -194,9 +194,11 @@ const formatRoadmapText = () => {
 
     stage.skills.forEach((skill, idx) => {
       content += `${idx + 1}. ${skill.name}\n`;
-      content += `   Difficulty: ${skill.difficulty}\n`;
       content += `   Time: ${skill.time}\n`;
-      content += `   Status: ${skill.status}\n\n`;
+      content += `   Status: ${skill.status}\n`;
+      content += `   Difficulty: ${skill.difficulty}\n`;
+      if (skill.url) content += `   Link: ${skill.url}\n`;
+      content += `\n`;
     });
 
     content += `--------------------------------------\n\n`;
@@ -294,107 +296,130 @@ setUser(userRes.data);
     setLoading(false);
   };
 
- const downloadRoadmap = () => {
+const downloadRoadmap = () => {
   const pdf = new jsPDF();
   let y = 20;
 
-  // 🎯 HEADER BAR
-  pdf.setFillColor(37, 99, 235);
-  pdf.rect(0, 0, 210, 25, "F");
+  // 🖤 BACKGROUND + HEADER
+  const drawBackground = () => {
+    pdf.setFillColor(10, 10, 15);
+    pdf.rect(0, 0, 210, 297, "F");
 
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont("Helvetica", "Bold");
-  pdf.setFontSize(18);
-  pdf.text(`${role.toUpperCase()} ROADMAP`, 10, 15);
+    // HEADER
+    pdf.setFillColor(30, 41, 59);
+    pdf.rect(0, 0, 210, 25, "F");
 
+    pdf.setTextColor(96, 165, 250);
+    pdf.setFont("Helvetica", "bold");
+    pdf.setFontSize(18);
+    pdf.text(`${(role || "Career").toUpperCase()} ROADMAP`, 10, 15);
+  };
+
+  drawBackground();
   y = 35;
 
   roadmapData.forEach((stage, i) => {
-    // PAGE BREAK
+    // 🧠 PAGE BREAK
     if (y > 260) {
       pdf.addPage();
-      y = 20;
+      drawBackground();
+      y = 30;
     }
 
-    // 📦 STAGE CONTAINER
-    pdf.setFillColor(245, 247, 250);
-    pdf.roundedRect(10, y, 190, 14, 4, 4, "F");
+    // 🧱 STAGE CARD
+    pdf.setFillColor(20, 20, 30);
+    pdf.roundedRect(10, y, 190, 20, 4, 4, "F");
 
-    pdf.setTextColor(0);
-    pdf.setFont("Helvetica", "Bold");
-    pdf.setFontSize(13);
-    pdf.text(`Stage ${i + 1}: ${stage.title}`, 14, y + 9);
+    const cleanTitle =
+      stage.title?.split(":")[1]?.trim() || stage.title;
 
-    y += 18;
-
-    // ⏱ Duration
-    pdf.setFont("Helvetica", "Normal");
+    pdf.setTextColor(96, 165, 250);
     pdf.setFontSize(10);
-    pdf.setTextColor(100);
+    pdf.text(`STAGE ${i + 1}`, 14, y + 7);
+
+    pdf.setTextColor(255);
+    pdf.setFontSize(12);
+    pdf.text(cleanTitle, 14, y + 14);
+
+    y += 24;
+
+    // ⏱ DURATION
+    pdf.setTextColor(148, 163, 184);
+    pdf.setFontSize(9);
     pdf.text(`Duration: ${stage.duration}`, 14, y);
 
     y += 10;
 
     stage.skills.forEach((skill, idx) => {
-      if (y > 270) {
+      if (y > 260) {
         pdf.addPage();
-        y = 20;
+        drawBackground();
+        y = 30;
       }
 
-      // 🧩 SKILL BOX BACKGROUND
-      pdf.setFillColor(250, 250, 250);
-      pdf.roundedRect(12, y - 4, 186, 16, 3, 3, "F");
+      // 🧩 SKILL CARD
+      pdf.setFillColor(30, 30, 45);
+      pdf.roundedRect(12, y - 4, 186, 34, 3, 3, "F");
 
-      // 🔢 Skill Title
-      pdf.setFont("Helvetica", "Bold");
-      pdf.setTextColor(20);
-      pdf.setFontSize(11);
+      // 🔢 TITLE
+      pdf.setTextColor(255);
+      pdf.setFont("Helvetica", "bold");
+      pdf.setFontSize(10);
       pdf.text(`${idx + 1}. ${skill.name}`, 16, y + 2);
 
-      // 🎨 Difficulty badge
-      let color = [34, 197, 94];
-      if (skill.difficulty?.toLowerCase() === "medium") color = [234, 179, 8];
-      if (skill.difficulty?.toLowerCase() === "hard") color = [239, 68, 68];
+      y += 10;
+
+      // 🎨 DIFFICULTY BADGE
+      let color = [34, 197, 94]; // easy
+      if (skill.difficulty?.toLowerCase() === "medium")
+        color = [234, 179, 8];
+      if (skill.difficulty?.toLowerCase() === "hard")
+        color = [239, 68, 68];
 
       pdf.setFillColor(...color);
-      pdf.roundedRect(150, y - 2, 35, 6, 2, 2, "F");
+      pdf.roundedRect(150, y - 6, 35, 7, 2, 2, "F");
 
-      pdf.setTextColor(255, 255, 255);
+      pdf.setTextColor(0);
       pdf.setFontSize(8);
-      pdf.text(skill.difficulty || "Easy", 152, y + 2);
+      pdf.text(skill.difficulty || "Easy", 152, y - 1);
 
-      y += 6;
+      // 🕒 TIME BADGE (NO EMOJI)
+      pdf.setFillColor(40, 40, 60);
+      pdf.roundedRect(16, y - 4, 45, 8, 2, 2, "F");
 
-      // ⏱ Time + Status
-      pdf.setTextColor(80);
-      pdf.setFontSize(9);
-      pdf.text(`Time: ${skill.time}`, 16, y);
+      pdf.setTextColor(148, 163, 184);
+      pdf.setFontSize(8);
+      pdf.text(`Time: ${skill.time}`, 18, y + 1);
 
-      pdf.text(`Status: ${skill.status}`, 80, y);
+      y += 12;
 
-      y += 6;
-
-      // 🔗 Resource (wrapped)
+      // 🔗 LINK CARD
       if (skill.url) {
-        pdf.setTextColor(37, 99, 235);
-        pdf.setFontSize(8);
+        pdf.setFillColor(20, 20, 30);
+        pdf.roundedRect(16, y - 2, 170, 12, 2, 2, "F");
+
+        pdf.setTextColor(96, 165, 250);
+        pdf.setFontSize(7);
 
         const link = pdf.splitTextToSize(skill.url, 160);
-        pdf.text(link, 16, y);
+        pdf.text(link, 18, y + 4);
 
-        y += link.length * 4;
+        y += link.length * 4 + 6;
+      } else {
+        y += 4;
       }
 
-      y += 6;
+      y += 6; // spacing between skills
     });
 
     // divider
-    pdf.setDrawColor(220);
+    pdf.setDrawColor(50);
     pdf.line(10, y, 200, y);
-    y += 10;
+
+    y += 12;
   });
 
-  pdf.save(`${(role || "Career").replace(/\s+/g, "_")}_Premium_Roadmap.pdf`);
+  pdf.save(`${(role || "Career")}_Dark_Roadmap.pdf`);
 };
   const normalizedRole = role.trim();
   const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
@@ -704,16 +729,24 @@ const SkillCard = ({ skill, onStatusUpdate, highlight }) => {
           <Clock size={10} /> {skill.time}
         </span>
 
-        {skill.url && (
-          <a
-            href={skill.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 font-bold hover:underline flex items-center gap-1"
-          >
-            Docs <ExternalLink size={10} />
-          </a>
-        )}
+       {skill.url && (
+         <a
+  href={skill.url}
+  target="_blank"
+  rel="noopener noreferrer"
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    color: "#60a5fa",
+    fontSize: "10px",
+    fontWeight: 700,
+    marginTop: "4px"
+  }}
+>
+  Docs <ExternalLink size={10} />
+</a>
+       )}
 
       </div>
     </motion.div>
