@@ -82,7 +82,7 @@ const formatTime = (ts) => {
   });
 };
 
-const FriendsPopup = ({ onClose }) => {
+const FriendsPopup = ({ onClose, navigate }) => {
   const popupRef = useRef(null);
   const [requests, setRequests] = useState([]);
   const [friends, setFriends] = useState([]);
@@ -201,24 +201,39 @@ const respond = async (id, action) => {
 )}
 
 {friends.map(f => (
-  <div key={f.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800/50 transition">
-    <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-700 flex items-center justify-center">
-  {f.profile_image ? (
-    <img
-      src={`${API}${f.profile_image}`}
-      className="w-full h-full object-cover"
-      onError={(e) => {
-        e.target.style.display = "none";
-      }}
-    />
-  ) : (
-    <span className="text-xs text-white font-bold">
-      {f.name?.charAt(0)}
-    </span>
-  )}
-</div>
+  <div 
+    key={f.id} 
+    className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/50 transition"
+  >
+    {/* LEFT */}
+    <div className="flex items-center gap-2">
+      <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-700 flex items-center justify-center">
+        {f.profile_image ? (
+          <img
+            src={`${API}${f.profile_image}`}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-xs text-white font-bold">
+            {f.name?.charAt(0)}
+          </span>
+        )}
+      </div>
 
-    <span className="text-sm text-slate-300">{f.name}</span>
+      <span className="text-sm text-slate-300">{f.name}</span>
+    </div>
+
+    <button
+      onClick={() => {
+        onClose();
+        navigate(`/chat/${f.id}`);
+      }}
+      className="p-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 
+      border border-indigo-500/20 hover:border-indigo-400/40 
+      text-indigo-400 transition-all"
+    >
+      <Send size={16} />
+    </button>
   </div>
 ))}
     </motion.div>
@@ -420,22 +435,29 @@ const ContactItem = ({
       {chat.online && <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#050b14] rounded-full" />}
     </div>
     <div className="flex-1 min-w-0">
-      <div className="flex justify-between items-center">
-  <h3 className="text-sm font-semibold text-slate-200 truncate">
-    {chat.name}
-  </h3>
+     <div className="flex justify-between items-center">
+  {/* LEFT: name + unread dot */}
+  <div className="flex items-center gap-2 min-w-0">
+    <h3 className="text-sm font-semibold text-slate-200 truncate">
+      {chat.name}
+    </h3>
 
+    {chat.unread_count > 0 && (
+      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+    )}
+  </div>
+
+  {/* RIGHT: menu */}
   <div className="relative">
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      setMenuOpen();
-    }}
-    className="p-1 hover:bg-slate-700 rounded"
-  >
-    <MoreVertical size={14} />
-  </button>
-
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        setMenuOpen();
+      }}
+      className="p-1 hover:bg-slate-700 rounded"
+    >
+      <MoreVertical size={14} />
+    </button>
   <AnimatePresence>
     {menuOpen && (
       <motion.div
@@ -458,7 +480,13 @@ const ContactItem = ({
   </AnimatePresence>
 </div>
 </div>
-      <p className="text-xs text-slate-500 truncate mt-0.5">
+<p
+  className={`text-xs truncate mt-0.5 transition-all ${
+    chat.unread_count > 0
+      ? "text-white font-semibold"
+      : "text-slate-500"
+  }`}
+>
   {chat.last_sender_id === currentUserId ? "You: " : ""}
   {chat.last_message || "No messages yet"}
 </p>
@@ -768,7 +796,12 @@ const filteredMessages = messages.filter((msg) => {
         {/* LEFT COLUMN: Inbox List (Always visible on desktop) */}
         <aside className={`relative w-full md:w-[350px] lg:w-[400px] flex flex-col border-r border-slate-800/60 ${currentTheme.sidebar} ${receiver_id ? 'hidden md:flex' : 'flex'}`}>
           <header className={`p-4 flex flex-col gap-4 ${currentTheme.bg}`}>
-           {showFriends && <FriendsPopup onClose={() => setShowFriends(false)} />} 
+           {showFriends && (
+  <FriendsPopup 
+    onClose={() => setShowFriends(false)} 
+    navigate={navigate}
+  />
+)} 
             <div className="flex justify-between items-center">
               <h1 className="text-xl font-bold text-white">Chats</h1>
               <div className="flex gap-2">

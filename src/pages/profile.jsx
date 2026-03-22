@@ -217,7 +217,8 @@ const updateLink = (platform, value) => {
 };
 const ProfilePage = () => {
   const { id } = useParams(); 
-  const isOwnProfile = !id;
+  const currentUser = JSON.parse(localStorage.getItem("user"));
+  const isOwnProfile = !id || String(currentUser?.id) === String(id);
   const [is2FA, setIs2FA] = useState(true);
   const [user, setUser] = useState(null);
   const [image, setImage] = useState(null);
@@ -578,12 +579,10 @@ if (new_password.length < 6) {
               <GlassCard>
                 <SectionHeader icon={Shield} title="Security & Settings" />
                 <div className="space-y-4">
-                  <button
-  onClick={handleChangePassword}
-  className="w-full flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 text-sm"
->
-  <Lock size={16} /> Change Password
-</button>
+      {isOwnProfile && (
+  <button onClick={handleChangePassword} className="w-full flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 text-sm" > 
+  <Lock size={16} />Change Password</button>
+)}
                 </div>
               </GlassCard>
             </div>

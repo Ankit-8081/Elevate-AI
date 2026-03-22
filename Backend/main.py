@@ -2,7 +2,8 @@
 # Importing necessary modules
 
 # ---- Standard Imports ---- #
-
+import os
+os.environ["PATH"] += r";C:\ffmpeg\bin"
 from typing import List, Literal
 from jose import jwt, JWTError
 from pydantic import BaseModel, Field
@@ -345,7 +346,8 @@ def init_db():
         message TEXT,
         created_at TEXT,
         deleted_for_sender INTEGER DEFAULT 0,
-        deleted_for_receiver INTEGER DEFAULT 0
+        deleted_for_receiver INTEGER DEFAULT 0,
+        is_read INTEGER DEFAULT 0
     )
     """
     )
@@ -446,6 +448,10 @@ CREATE TABLE IF NOT EXISTS profile_views_log (
         pass
     try:
         cursor.execute("ALTER TABLE users ADD COLUMN last_login_date TEXT")
+    except:
+        pass
+    try:
+        cursor.execute("ALTER TABLE direct_messages ADD COLUMN is_read INTEGER DEFAULT 0")
     except:
         pass
     conn.commit()
@@ -557,22 +563,32 @@ Rules:
 @app.post("/audio/process")
 async def process_audio(file: UploadFile = File(...), language: str = Form(...)):
     try:
+        print("📥 Audio received from frontend")
+
         # 📁 Save file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
             content = await file.read()
             tmp.write(content)
             path = tmp.name
 
-        # 🎤 STEP 1: Transcribe
-        transcription = transcribe_audio(path)
+        print("💾 Audio saved:", path)
 
-        # 🌍 STEP 2: Translate (LangChain + Gemini)
-        if language.lower() != "english":
+        # 🎤 STEP 1: Transcribe
+        print("🧠 Transcribing audio...")
+        transcription = transcribe_audio(path)
+        print("📝 Transcription:", transcription)
+
+        # 🌍 STEP 2: Translate
+        print("🌍 Translating...")
+        if language.lower() != "en":
             translation = translate_to_english(transcription)
         else:
             translation = transcription
 
+        print("✅ Final English:", translation)
+
         os.remove(path)
+        print("🗑️ Temp file deleted")
 
         return {
             "original_language": language,
@@ -581,6 +597,7 @@ async def process_audio(file: UploadFile = File(...), language: str = Form(...))
         }
 
     except Exception as e:
+        print("❌ ERROR:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1692,7 +1709,7 @@ async def send_message(
     if sender_id == receiver_id:
         raise HTTPException(status_code=400, detail="You cannot message yourself")
 
-    # 🔒 🔥 ONLY ALLOW FRIENDS
+    # 🔒 ONLY ALLOW FRIENDS
     cursor.execute(
         """
         SELECT * FROM friend_requests 
@@ -1703,7 +1720,7 @@ async def send_message(
             OR
             (sender_id=? AND receiver_id=?)
         )
-    """,
+        """,
         (sender_id, receiver_id, receiver_id, sender_id),
     )
 
@@ -1723,11 +1740,10 @@ async def send_message(
         contents = await file.read()
         file_name = file.filename
 
-        # 📏 File size limit (10MB)
+        # 📏 File size limit
         if len(contents) > 10 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="File too large (max 10MB)")
 
-        # 🔒 Allowed MIME types
         allowed_types = [
             "image/png",
             "image/jpeg",
@@ -1740,14 +1756,12 @@ async def send_message(
         if file.content_type not in allowed_types:
             raise HTTPException(status_code=400, detail="Unsupported file type")
 
-        # 🔒 Extension safety
         SAFE_EXTENSIONS = ["png", "jpg", "jpeg", "pdf", "mp4", "mp3"]
         ext = file.filename.split(".")[-1].lower()
 
         if ext not in SAFE_EXTENSIONS:
             raise HTTPException(status_code=400, detail="Invalid file extension")
 
-        # 💾 Save file
         filename = f"{uuid.uuid4()}.{ext}"
         path = os.path.join("uploads", filename)
 
@@ -1757,13 +1771,13 @@ async def send_message(
         file_url = f"/uploads/{filename}"
         file_type = file.content_type
 
-    # 💬 Save message
+    # 💬 SAVE MESSAGE (🔥 FIX HERE)
     cursor.execute(
         """
         INSERT INTO direct_messages 
-        (sender_id, receiver_id, message, file_url, file_type, file_name, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """,
+        (sender_id, receiver_id, message, file_url, file_type, file_name, created_at, is_read)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+        """,
         (
             sender_id,
             receiver_id,
@@ -1780,9 +1794,12 @@ async def send_message(
 
     return {
         "message": "sent successfully",
-        "data": {"receiver_id": receiver_id, "text": message, "file": file_url},
+        "data": {
+            "receiver_id": receiver_id,
+            "text": message,
+            "file": file_url,
+        },
     }
-
 
 @app.post("/friends/request/{receiver_id}")
 def send_request(
@@ -2224,10 +2241,12 @@ def get_inbox(credentials: HTTPAuthorizationCredentials = Depends(security)):
     conn = get_db()
     cursor = conn.cursor()
 
+    # 🔍 get current user
     cursor.execute("SELECT id FROM users WHERE email=?", (email,))
     user = cursor.fetchone()
     user_id = user["id"]
 
+    # 🧠 get conversations
     cursor.execute(
         """
         SELECT 
@@ -2240,25 +2259,28 @@ def get_inbox(credentials: HTTPAuthorizationCredentials = Depends(security)):
         WHERE sender_id = ? OR receiver_id = ?
         GROUP BY other_user_id
         ORDER BY last_time DESC
-    """,
+        """,
         (user_id, user_id, user_id),
     )
 
     rows = cursor.fetchall()
-
     conversations = []
 
     for r in rows:
         other_id = r["other_user_id"]
 
+        # 👤 get user info
         cursor.execute(
-            "SELECT id, name, profile_image FROM users WHERE id=?", (other_id,)
+            "SELECT id, name, profile_image FROM users WHERE id=?",
+            (other_id,),
         )
         user_data = cursor.fetchone()
 
+        # 💬 last message
         cursor.execute(
             """
-            SELECT sender_id, message, file_url, file_type FROM direct_messages
+            SELECT sender_id, message, file_url, file_type 
+            FROM direct_messages
             WHERE 
             (
                 sender_id=? AND receiver_id=? AND deleted_for_sender=0
@@ -2268,15 +2290,28 @@ def get_inbox(credentials: HTTPAuthorizationCredentials = Depends(security)):
                 sender_id=? AND receiver_id=? AND deleted_for_receiver=0
             )
             ORDER BY created_at DESC LIMIT 1
-        """,
+            """,
             (user_id, other_id, other_id, user_id),
         )
 
         last_msg = cursor.fetchone()
-
         if not last_msg:
-            continue  # 🚨 skip empty chats
+            continue
 
+        # 🔥 ADD THIS BLOCK (UNREAD COUNT)
+        cursor.execute(
+            """
+            SELECT COUNT(*) FROM direct_messages
+            WHERE sender_id=? 
+            AND receiver_id=? 
+            AND is_read=0
+            """,
+            (other_id, user_id),
+        )
+
+        unread_count = cursor.fetchone()[0]
+
+        # 📦 response
         conversations.append(
             {
                 "user_id": user_data["id"],
@@ -2288,12 +2323,12 @@ def get_inbox(credentials: HTTPAuthorizationCredentials = Depends(security)):
                     else f"📎 {last_msg['file_type'] or 'File'}"
                 ),
                 "last_sender_id": last_msg["sender_id"],
+                "unread_count": unread_count,  # 🔥 CRITICAL FIX
             }
         )
 
     conn.close()
     return conversations
-
 
 @app.delete("/messages/{message_id}")
 def delete_message(
@@ -2392,44 +2427,51 @@ def get_messages(
     conn = get_db()
     cursor = conn.cursor()
 
-    # current user
     cursor.execute("SELECT id FROM users WHERE email=?", (email,))
     current = cursor.fetchone()
-
-    if not current:
-        raise HTTPException(status_code=404, detail="User not found")
-
     current_user_id = current["id"]
 
     if current_user_id == user_id:
         raise HTTPException(status_code=400, detail="Invalid conversation")
 
+    # 🔥 MARK AS READ
     cursor.execute(
         """
-SELECT 
-    dm.*,
-    u.profile_image,
-    u.name as sender_name
-FROM direct_messages dm
-JOIN users u ON dm.sender_id = u.id
-WHERE 
-(
-    dm.sender_id=? AND dm.receiver_id=? AND dm.deleted_for_sender=0
-)
-OR
-(
-    dm.sender_id=? AND dm.receiver_id=? AND dm.deleted_for_receiver=0
-)
-ORDER BY dm.created_at ASC
-""",
+        UPDATE direct_messages
+        SET is_read = 1
+        WHERE sender_id=? AND receiver_id=?
+        """,
+        (user_id, current_user_id),
+    )
+
+    # 💬 fetch messages
+    cursor.execute(
+        """
+        SELECT 
+            dm.*,
+            u.profile_image,
+            u.name as sender_name
+        FROM direct_messages dm
+        JOIN users u ON dm.sender_id = u.id
+        WHERE 
+        (
+            dm.sender_id=? AND dm.receiver_id=? AND dm.deleted_for_sender=0
+        )
+        OR
+        (
+            dm.sender_id=? AND dm.receiver_id=? AND dm.deleted_for_receiver=0
+        )
+        ORDER BY dm.created_at ASC
+        """,
         (current_user_id, user_id, user_id, current_user_id),
     )
 
     messages = cursor.fetchall()
+
+    conn.commit()
     conn.close()
 
     return [dict(m) for m in messages]
-
 
 @app.get("/feed/comments/{post_id}")
 def get_comments(post_id: int):

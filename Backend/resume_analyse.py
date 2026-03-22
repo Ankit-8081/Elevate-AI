@@ -25,7 +25,7 @@ class BestJobRole(BaseModel):
 
 class MarketReadiness(BaseModel):
     score:int = Field(description="Percentage Readiness of User")
-    market_readiness:Literal['Very Low','Low','Medium','High','Very High'] = Field(description="User's Overall Job Market Readiness")
+    market_readiness:Literal['Unqualified', 'Emerging', 'Considerable', 'Shortlist', 'Top Pick'] = Field(description="User's Overall Job Market Readiness")
     key_strengths: List[str] = Field(description="Top professional strengths found")
     critical_gaps: List[str] = Field(description="Major missing qualifications")
     missing_keywords: List[str] = Field(description="Specific technical terms missing")
@@ -56,11 +56,11 @@ Evaluation Rules:
 1. Score (0–100)
 
 * Estimate the user's overall job market readiness.
-* 0–30 → Very weak resume
-* 31–50 → Early stage candidate
-* 51–70 → Moderate readiness
-* 71–85 → Strong candidate
-* 86–100 → Highly competitive candidate
+* 0–30 → Unqualified
+* 31–50 → Emerging
+* 51–70 → Considerable
+* 71–85 → Shortlist
+* 86–100 → Top Pick
 
 2. Market Readiness Category
    Assign the category based on the score:
