@@ -16,11 +16,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from Roadmap import Roadmap
 from dotenv import load_dotenv
 from fastapi.staticfiles import StaticFiles
-from transformers import pipeline
 
 import uuid
 import tempfile
-import torch
 import os
 import json
 import traceback
@@ -45,6 +43,8 @@ def get_asr_pipeline():
     global asr_pipeline
     if asr_pipeline is None:
         print("🚀 Loading Whisper model...")
+        import torch
+        from transformers import pipeline
         asr_pipeline = pipeline(
             "automatic-speech-recognition",
             model="openai/whisper-small",
