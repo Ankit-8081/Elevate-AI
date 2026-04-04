@@ -14,7 +14,7 @@ langchain-core==0.2.0
 langchain-google-genai==1.0.5
 langchain-groq==0.1.6
 langchain-text-splitters==0.2.0
-langgraph==0.1.0
+langgraph==0.1.1
 google-genai
 groq
 httpx
