@@ -19,7 +19,6 @@ from fastapi.staticfiles import StaticFiles
 
 import uuid
 import tempfile
-import os
 import json
 import traceback
 import time
@@ -317,11 +316,8 @@ Rules:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        os.getenv("FRONTEND_URL", "https://elevate-ai.vercel.app"),
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
