@@ -343,8 +343,8 @@ def init_db():
         phone TEXT,
         bio TEXT,
         linkedin TEXT,
-        current_role TEXT,
-        target_role TEXT,
+        "current_role" TEXT,
+        "target_role" TEXT,
         best_job_role TEXT,
         professional_links TEXT,
         profile_image TEXT,
@@ -371,7 +371,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS chat_messages (
         id SERIAL PRIMARY KEY,
         user_email TEXT,
-        role TEXT,
+        "role" TEXT,
         message TEXT,
         response_time REAL,
         created_at TEXT
