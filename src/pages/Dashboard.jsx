@@ -20,7 +20,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../components/sidebar.jsx';
 import { useNavigate } from "react-router-dom";
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_BASE_URL;
 
 const StatCard = ({ icon: Icon, label, value, color }) => (
   <motion.div

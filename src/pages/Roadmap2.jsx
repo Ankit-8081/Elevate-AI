@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_BASE_URL;
 
 const ROLE_SKILLS = {
   "AI Engineer": ["Python", "PyTorch", "Transformers", "MLOps", "Deep Learning"],

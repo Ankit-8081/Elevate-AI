@@ -9,7 +9,7 @@ import {
 import Sidebar from '../components/sidebar';
 import { useNavigate } from "react-router-dom";
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_BASE_URL;
 const StatCard = ({ label, value, icon: Icon, colorClass }) => (
   <motion.div 
     initial={{ opacity: 0, y: 10 }}

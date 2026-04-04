@@ -12,7 +12,7 @@ import {
 import Header from '../components/header';
 import Sidebar from '../components/sidebar';
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_BASE_URL;
 const GlassCard = ({ children, className = "" }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -44,7 +44,7 @@ export default function ResumeDashboard() {
 
     try {
       const res = await axios.post(
-        "http://localhost:8000/upload-resume",
+        `${import.meta.env.VITE_API_BASE_URL}/upload-resume`,
         formData,
         {
           headers: {

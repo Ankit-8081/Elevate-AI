@@ -10,7 +10,7 @@ import { useEffect } from "react";
 import { useRef } from "react";
 
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_BASE_URL;
 
 // --- Sub-Components ---
 

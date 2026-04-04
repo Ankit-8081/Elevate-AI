@@ -10,7 +10,7 @@ import Sidebar from '../components/sidebar';
 import { Users } from "lucide-react";
 import { Check, X } from "lucide-react";
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_BASE_URL;
 const EMOJIS = [
   "😀","😂","🤣","😍","❤️",
   "🔥","👍","👏","😎","💯",

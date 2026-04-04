@@ -14,7 +14,7 @@ import {
 import Sidebar from '../components/sidebar';
 import Header from '../components/header';
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_BASE_URL;
 const Badge = ({ children, variant = 'default' }) => {
   const styles = {
     default: "bg-white/10 text-slate-300",

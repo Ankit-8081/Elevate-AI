@@ -14,7 +14,7 @@ import {
 import Sidebar from "../components/sidebar";
 import axios from "axios";
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_BASE_URL;
 const FindJobs = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(false);

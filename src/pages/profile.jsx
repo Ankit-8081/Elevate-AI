@@ -11,7 +11,7 @@ import Sidebar from '../components/sidebar';
 import axios from "axios";
 import { useParams } from "react-router-dom";
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_BASE_URL;
 const GlassCard = ({ children, className = "" }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}

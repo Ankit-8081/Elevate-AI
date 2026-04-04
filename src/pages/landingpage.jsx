@@ -11,7 +11,7 @@ import axios from "axios";
 import img1 from "../assets/1.jpg";
 import img2 from "../assets/2.jpg";
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_BASE_URL;
 const GlassCard = ({ children, className = "" }) => (
   <motion.div 
     whileHover={{ 

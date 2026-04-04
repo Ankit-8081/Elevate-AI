@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import Sidebar from '../components/sidebar.jsx';
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_BASE_URL;
 const Card = ({ children, title, icon: Icon }) => (
   <motion.div
     whileHover={{ y: -1, boxShadow: '0 10px 30px -10px rgba(255,255,255,0.03)' }}
@@ -155,7 +155,7 @@ const handleCompile = async () => {
 
   try {
     const res = await axios.post(
-      "http://127.0.0.1:8000/resume/generate",
+      `${import.meta.env.VITE_API_BASE_URL}/resume/generate`,
       {
         session_id: user ? user.email : "session1",
         resume_data: resumeData
@@ -223,7 +223,7 @@ const handleCompile = async () => {
     try {
 
       const res = await axios.post(
-        "http://127.0.0.1:8000/resume/generate",
+        `${import.meta.env.VITE_API_BASE_URL}/resume/generate`,
         {
           session_id: user?.email || "session1",
           resume_data: resumeData
