@@ -3,7 +3,6 @@
 
 # ---- Standard Imports ---- #
 import os
-os.environ["PATH"] += r";C:\ffmpeg\bin"
 from typing import List, Literal
 from jose import jwt, JWTError
 from pydantic import BaseModel, Field
@@ -19,7 +18,6 @@ from dotenv import load_dotenv
 from fastapi.staticfiles import StaticFiles
 from transformers import pipeline
 
-import sqlite3
 import uuid
 import tempfile
 import torch
@@ -177,9 +175,14 @@ class ProfileUpdate(BaseModel):
 structured_llm = llm.with_structured_output(MarketReadiness)
 
 
+import psycopg2
+import psycopg2.extras
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 def get_db():
-    conn = sqlite3.connect("users.db", check_same_thread=False)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(DATABASE_URL)
+    conn.cursor_factory = psycopg2.extras.RealDictCursor
     return conn
 
 
@@ -314,7 +317,10 @@ Rules:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=".*",
+    allow_origins=[
+        "http://localhost:5173",
+        os.getenv("FRONTEND_URL", "https://elevate-ai.vercel.app"),
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -323,13 +329,13 @@ app.add_middleware(
 
 # ---------------- DATABASE ---------------- #
 def init_db():
-    conn = sqlite3.connect("users.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         name TEXT,
         username TEXT,
         email TEXT UNIQUE,
@@ -352,7 +358,10 @@ def init_db():
         roadmap TEXT,
         created_at TEXT,
         last_active_date TEXT,
-        learning_streak INTEGER DEFAULT 0
+        learning_streak INTEGER DEFAULT 0,
+        profile_views INTEGER DEFAULT 0,
+        login_streak INTEGER DEFAULT 1,
+        last_login_date TEXT
     )
     """
     )
@@ -360,7 +369,7 @@ def init_db():
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS chat_messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         user_email TEXT,
         role TEXT,
         message TEXT,
@@ -373,120 +382,80 @@ def init_db():
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS direct_messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         sender_id INTEGER,
         receiver_id INTEGER,
         message TEXT,
         created_at TEXT,
         deleted_for_sender INTEGER DEFAULT 0,
         deleted_for_receiver INTEGER DEFAULT 0,
-        is_read INTEGER DEFAULT 0
+        is_read INTEGER DEFAULT 0,
+        file_url TEXT,
+        file_type TEXT,
+        file_name TEXT
     )
     """
     )
 
     cursor.execute(
         """
-CREATE TABLE IF NOT EXISTS feed_posts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_email TEXT,
-    content TEXT,
-    type TEXT,
-    tags TEXT,
-    image TEXT,
-    created_at TEXT
-)
+    CREATE TABLE IF NOT EXISTS feed_posts (
+        id SERIAL PRIMARY KEY,
+        user_email TEXT,
+        content TEXT,
+        type TEXT,
+        tags TEXT,
+        image TEXT,
+        created_at TEXT
+    )
     """
     )
 
     cursor.execute(
         """
-CREATE TABLE IF NOT EXISTS post_likes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    post_id INTEGER,
-    user_email TEXT,
-    UNIQUE(post_id, user_email)
-)
-"""
+    CREATE TABLE IF NOT EXISTS post_likes (
+        id SERIAL PRIMARY KEY,
+        post_id INTEGER,
+        user_email TEXT,
+        UNIQUE(post_id, user_email)
+    )
+    """
     )
 
     cursor.execute(
         """
-CREATE TABLE IF NOT EXISTS post_comments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    post_id INTEGER,
-    user_email TEXT,
-    comment TEXT,
-    created_at TEXT
-)
-"""
+    CREATE TABLE IF NOT EXISTS post_comments (
+        id SERIAL PRIMARY KEY,
+        post_id INTEGER,
+        user_email TEXT,
+        comment TEXT,
+        created_at TEXT
     )
-    cursor.execute(
-        """
- CREATE TABLE IF NOT EXISTS friend_requests (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    sender_id INTEGER,
-    receiver_id INTEGER,
-    status TEXT DEFAULT 'pending',
-    created_at TEXT
-)
-"""
-    )
-    cursor.execute(
-        """
-CREATE TABLE IF NOT EXISTS profile_views_log (
-    viewer_id INTEGER,
-    viewed_id INTEGER,
-    viewed_at TEXT
-)
-"""
+    """
     )
 
-    try:
-        cursor.execute(
-            "ALTER TABLE direct_messages ADD COLUMN deleted_for_sender INTEGER DEFAULT 0"
-        )
-    except:
-        pass
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS friend_requests (
+        id SERIAL PRIMARY KEY,
+        sender_id INTEGER,
+        receiver_id INTEGER,
+        status TEXT DEFAULT 'pending',
+        created_at TEXT
+    )
+    """
+    )
 
-    try:
-        cursor.execute(
-            "ALTER TABLE direct_messages ADD COLUMN deleted_for_receiver INTEGER DEFAULT 0"
-        )
-    except:
-        pass
-    try:
-        cursor.execute("ALTER TABLE direct_messages ADD COLUMN file_url TEXT")
-    except:
-        pass
-    try:
-        cursor.execute("ALTER TABLE direct_messages ADD COLUMN file_type TEXT")
-    except:
-        pass
-    try:
-        cursor.execute("ALTER TABLE direct_messages ADD COLUMN file_name TEXT")
-    except:
-        pass
-    try:
-        cursor.execute("ALTER TABLE feed_posts ADD COLUMN image TEXT")
-    except:
-        pass
-    try:
-        cursor.execute("ALTER TABLE users ADD COLUMN profile_views INTEGER DEFAULT 0")
-    except:
-        pass
-    try:
-        cursor.execute("ALTER TABLE users ADD COLUMN login_streak INTEGER DEFAULT 1")
-    except:
-        pass
-    try:
-        cursor.execute("ALTER TABLE users ADD COLUMN last_login_date TEXT")
-    except:
-        pass
-    try:
-        cursor.execute("ALTER TABLE direct_messages ADD COLUMN is_read INTEGER DEFAULT 0")
-    except:
-        pass
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS profile_views_log (
+        viewer_id INTEGER,
+        viewed_id INTEGER,
+        viewed_at TEXT
+    )
+    """
+    )
+
     conn.commit()
     conn.close()
 
@@ -495,7 +464,7 @@ init_db()
 
 # ---------------- AUTH CONFIG ---------------- #
 
-SECRET_KEY = "supersecretkey"
+SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_HOURS = 24
 
@@ -644,7 +613,7 @@ def signup(data: SignupRequest):
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM users WHERE email = ?", (data.email,))
+    cursor.execute("SELECT * FROM users WHERE email = %s", (data.email,))
     existing_user = cursor.fetchone()
 
     if existing_user:
@@ -675,7 +644,7 @@ def signup(data: SignupRequest):
             login_streak,
             last_login_date
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
             data.name,
@@ -713,26 +682,26 @@ def like_post(
 
     # 🔍 check if already liked
     cursor.execute(
-        "SELECT * FROM post_likes WHERE post_id=? AND user_email=?", (post_id, email)
+        "SELECT * FROM post_likes WHERE post_id=%s AND user_email=%s", (post_id, email)
     )
     existing = cursor.fetchone()
 
     if existing:
         # ❌ unlike
         cursor.execute(
-            "DELETE FROM post_likes WHERE post_id=? AND user_email=?", (post_id, email)
+            "DELETE FROM post_likes WHERE post_id=%s AND user_email=%s", (post_id, email)
         )
         liked = False
     else:
         # ❤️ like
         cursor.execute(
-            "INSERT INTO post_likes (post_id, user_email) VALUES (?, ?)",
+            "INSERT INTO post_likes (post_id, user_email) VALUES (%s, %s)",
             (post_id, email),
         )
         liked = True
 
     # 🔢 get updated like count
-    cursor.execute("SELECT COUNT(*) FROM post_likes WHERE post_id=?", (post_id,))
+    cursor.execute("SELECT COUNT(*) FROM post_likes WHERE post_id=%s", (post_id,))
     likes = cursor.fetchone()[0]
 
     conn.commit()
@@ -759,7 +728,7 @@ def add_comment(
     cursor.execute(
         """
         INSERT INTO post_comments (post_id, user_email, comment, created_at)
-        VALUES (?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s)
     """,
         (post_id, email, data.comment, datetime.utcnow().isoformat()),
     )
@@ -780,7 +749,7 @@ def delete_comment(
     cursor = conn.cursor()
 
     # check ownership
-    cursor.execute("SELECT user_email FROM post_comments WHERE id=?", (comment_id,))
+    cursor.execute("SELECT user_email FROM post_comments WHERE id=%s", (comment_id,))
     comment = cursor.fetchone()
 
     if not comment:
@@ -789,7 +758,7 @@ def delete_comment(
     if comment["user_email"] != email:
         raise HTTPException(status_code=403, detail="Not allowed")
 
-    cursor.execute("DELETE FROM post_comments WHERE id=?", (comment_id,))
+    cursor.execute("DELETE FROM post_comments WHERE id=%s", (comment_id,))
 
     conn.commit()
     conn.close()
@@ -807,7 +776,7 @@ def delete_post(
     cursor = conn.cursor()
 
     # check ownership
-    cursor.execute("SELECT user_email FROM feed_posts WHERE id=?", (post_id,))
+    cursor.execute("SELECT user_email FROM feed_posts WHERE id=%s", (post_id,))
     post = cursor.fetchone()
 
     if not post:
@@ -817,11 +786,11 @@ def delete_post(
         raise HTTPException(status_code=403, detail="Not allowed")
 
     # delete related data first (IMPORTANT)
-    cursor.execute("DELETE FROM post_likes WHERE post_id=?", (post_id,))
-    cursor.execute("DELETE FROM post_comments WHERE post_id=?", (post_id,))
+    cursor.execute("DELETE FROM post_likes WHERE post_id=%s", (post_id,))
+    cursor.execute("DELETE FROM post_comments WHERE post_id=%s", (post_id,))
 
     # delete post
-    cursor.execute("DELETE FROM feed_posts WHERE id=?", (post_id,))
+    cursor.execute("DELETE FROM feed_posts WHERE id=%s", (post_id,))
 
     conn.commit()
     conn.close()
@@ -836,7 +805,7 @@ def login(data: LoginRequest):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id, name, username, linkedin, email, password, last_active_date, learning_streak, login_streak, last_login_date FROM users WHERE email = ?",
+        "SELECT id, name, username, linkedin, email, password, last_active_date, learning_streak, login_streak, last_login_date FROM users WHERE email = %s",
         (data.email,),
     )
 
@@ -874,8 +843,8 @@ def login(data: LoginRequest):
     cursor.execute(
         """
     UPDATE users
-    SET last_login_date=?, login_streak=?
-    WHERE email=?
+    SET last_login_date=%s, login_streak=%s
+    WHERE email=%s
 """,
         (today.isoformat(), login_streak, email),
     )
@@ -910,7 +879,7 @@ def reset_roadmap_streak(credentials: HTTPAuthorizationCredentials = Depends(sec
         """
         UPDATE users
         SET learning_streak=0, last_active_date=NULL
-        WHERE email=?
+        WHERE email=%s
     """,
         (email,),
     )
@@ -979,7 +948,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
     user = cursor.fetchone()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -1043,7 +1012,7 @@ def delete_conversation(
     cursor = conn.cursor()
 
     # 🔍 current user
-    cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
     current = cursor.fetchone()
 
     if not current:
@@ -1057,15 +1026,15 @@ def delete_conversation(
         UPDATE direct_messages
         SET 
             deleted_for_sender = CASE 
-                WHEN sender_id = ? THEN 1 ELSE deleted_for_sender 
+                WHEN sender_id = %s THEN 1 ELSE deleted_for_sender 
             END,
             deleted_for_receiver = CASE 
-                WHEN receiver_id = ? THEN 1 ELSE deleted_for_receiver 
+                WHEN receiver_id = %s THEN 1 ELSE deleted_for_receiver 
             END
         WHERE 
-            (sender_id=? AND receiver_id=?)
+            (sender_id=%s AND receiver_id=%s)
             OR
-            (sender_id=? AND receiver_id=?)
+            (sender_id=%s AND receiver_id=%s)
     """,
         (
             current_user_id,
@@ -1097,15 +1066,15 @@ def update_profile(
     cursor.execute(
         """
     UPDATE users
-    SET name=?,
-        username=?,
-        phone=?,
-        bio=?,
-        current_role=?,
-        target_role=?,
-        linkedin=?,
-        professional_links=?
-    WHERE email=?
+    SET name=%s,
+        username=%s,
+        phone=%s,
+        bio=%s,
+        current_role=%s,
+        target_role=%s,
+        linkedin=%s,
+        professional_links=%s
+    WHERE email=%s
 """,
         (
             data.name,
@@ -1147,7 +1116,7 @@ async def upload_profile_image(
     cursor = conn.cursor()
 
     cursor.execute(
-        "UPDATE users SET profile_image=? WHERE email=?", (f"/images/{filename}", email)
+        "UPDATE users SET profile_image=%s WHERE email=%s", (f"/images/{filename}", email)
     )
 
     conn.commit()
@@ -1178,7 +1147,7 @@ async def upload_cover_image(
     cursor = conn.cursor()
 
     cursor.execute(
-        "UPDATE users SET cover_image=? WHERE email=?", (f"/images/{filename}", email)
+        "UPDATE users SET cover_image=%s WHERE email=%s", (f"/images/{filename}", email)
     )
 
     conn.commit()
@@ -1197,7 +1166,7 @@ def get_user_roadmap(credentials: HTTPAuthorizationCredentials = Depends(securit
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT roadmap FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT roadmap FROM users WHERE email=%s", (email,))
     row = cursor.fetchone()
 
     conn.close()
@@ -1243,14 +1212,14 @@ async def analyze_uploaded_resume(
         cursor.execute(
             """
 UPDATE users
-SET market_readiness = ?,
-    skills = ?,
-    projects = ?,
-    certifications = ?,
-    target_role = ?,
-    resume_analysis = ?,
-    best_job_role = ?
-WHERE email = ?
+SET market_readiness = %s,
+    skills = %s,
+    projects = %s,
+    certifications = %s,
+    target_role = %s,
+    resume_analysis = %s,
+    best_job_role = %s
+WHERE email = %s
 """,
             (
                 report["market_readiness"],
@@ -1298,7 +1267,7 @@ def get_best_job(credentials: HTTPAuthorizationCredentials = Depends(security)):
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT best_job_role FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT best_job_role FROM users WHERE email=%s", (email,))
     row = cursor.fetchone()
 
     conn.close()
@@ -1405,13 +1374,13 @@ def chat_ai(
 
     # store user message
     cursor.execute(
-        "INSERT INTO chat_messages (user_email, role, message, created_at) VALUES (?, ?, ?, ?)",
+        "INSERT INTO chat_messages (user_email, role, message, created_at) VALUES (%s, %s, %s, %s)",
         (email, "user", data.message, datetime.utcnow().isoformat()),
     )
 
     # store AI response
     cursor.execute(
-        "INSERT INTO chat_messages (user_email, role, message, response_time, created_at) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO chat_messages (user_email, role, message, response_time, created_at) VALUES (%s, %s, %s, %s, %s)",
         (email, "ai", response, response_time, datetime.utcnow().isoformat()),
     )
 
@@ -1456,7 +1425,7 @@ def get_chat_history(credentials: HTTPAuthorizationCredentials = Depends(securit
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT role, message, response_time FROM chat_messages WHERE user_email=? ORDER BY id",
+        "SELECT role, message, response_time FROM chat_messages WHERE user_email=%s ORDER BY id",
         (email,),
     )
 
@@ -1482,7 +1451,7 @@ def save_roadmap(
     cursor = conn.cursor()
 
     cursor.execute(
-        "UPDATE users SET roadmap=? WHERE email=?", (json.dumps(data.roadmap), email)
+        "UPDATE users SET roadmap=%s WHERE email=%s", (json.dumps(data.roadmap), email)
     )
 
     conn.commit()
@@ -1544,7 +1513,7 @@ async def upload_resume(
     cursor = conn.cursor()
 
     cursor.execute(
-        "UPDATE users SET resume=? WHERE email=?", (f"/resume-files/{filename}", email)
+        "UPDATE users SET resume=%s WHERE email=%s", (f"/resume-files/{filename}", email)
     )
 
     conn.commit()
@@ -1562,7 +1531,7 @@ def leaderboard(credentials: HTTPAuthorizationCredentials = Depends(security)):
     cursor = conn.cursor()
 
     # 🔍 current user id
-    cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
     current_user = cursor.fetchone()
     current_user_id = current_user["id"]
 
@@ -1656,7 +1625,7 @@ def get_user_profile(
     cursor = conn.cursor()
 
     # 🔍 get current user id
-    cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
     current = cursor.fetchone()
 
     if not current:
@@ -1665,7 +1634,7 @@ def get_user_profile(
     current_user_id = current["id"]
 
     # 🔍 fetch target user
-    cursor.execute("SELECT * FROM users WHERE id=?", (user_id,))
+    cursor.execute("SELECT * FROM users WHERE id=%s", (user_id,))
     user = cursor.fetchone()
 
     if not user:
@@ -1677,7 +1646,7 @@ def get_user_profile(
         cursor.execute(
             """
             SELECT viewed_at FROM profile_views_log
-            WHERE viewer_id=? AND viewed_id=?
+            WHERE viewer_id=%s AND viewed_id=%s
             ORDER BY viewed_at DESC LIMIT 1
         """,
             (current_user_id, user_id),
@@ -1697,7 +1666,7 @@ def get_user_profile(
                 """
                 UPDATE users 
                 SET profile_views = COALESCE(profile_views, 0) + 1 
-                WHERE id=?
+                WHERE id=%s
             """,
                 (user_id,),
             )
@@ -1706,7 +1675,7 @@ def get_user_profile(
             cursor.execute(
                 """
                 INSERT INTO profile_views_log (viewer_id, viewed_id, viewed_at)
-                VALUES (?, ?, ?)
+                VALUES (%s, %s, %s)
             """,
                 (current_user_id, user_id, datetime.utcnow().isoformat()),
             )
@@ -1748,7 +1717,7 @@ async def send_message(
     cursor = conn.cursor()
 
     # 🔍 Get sender
-    cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
     sender = cursor.fetchone()
 
     if not sender:
@@ -1757,7 +1726,7 @@ async def send_message(
     sender_id = sender["id"]
 
     # 🔍 Check receiver exists
-    cursor.execute("SELECT id FROM users WHERE id=?", (receiver_id,))
+    cursor.execute("SELECT id FROM users WHERE id=%s", (receiver_id,))
     receiver = cursor.fetchone()
 
     if not receiver:
@@ -1774,9 +1743,9 @@ async def send_message(
         WHERE 
         status='accepted' AND
         (
-            (sender_id=? AND receiver_id=?)
+            (sender_id=%s AND receiver_id=%s)
             OR
-            (sender_id=? AND receiver_id=?)
+            (sender_id=%s AND receiver_id=%s)
         )
         """,
         (sender_id, receiver_id, receiver_id, sender_id),
@@ -1834,7 +1803,7 @@ async def send_message(
         """
         INSERT INTO direct_messages 
         (sender_id, receiver_id, message, file_url, file_type, file_name, created_at, is_read)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, 0)
         """,
         (
             sender_id,
@@ -1868,7 +1837,7 @@ def send_request(
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
     sender = cursor.fetchone()
 
     if not sender:
@@ -1884,9 +1853,9 @@ def send_request(
 SELECT * FROM friend_requests 
 WHERE 
 (
-    (sender_id=? AND receiver_id=?)
+    (sender_id=%s AND receiver_id=%s)
     OR
-    (sender_id=? AND receiver_id=?)
+    (sender_id=%s AND receiver_id=%s)
 )
 AND status IN ('pending', 'accepted')
 """,
@@ -1899,7 +1868,7 @@ AND status IN ('pending', 'accepted')
     cursor.execute(
         """
         INSERT INTO friend_requests (sender_id, receiver_id, created_at)
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
     """,
         (sender_id, receiver_id, datetime.utcnow().isoformat()),
     )
@@ -1917,7 +1886,7 @@ def get_requests(credentials: HTTPAuthorizationCredentials = Depends(security)):
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
     user = cursor.fetchone()
 
     if not user:
@@ -1930,7 +1899,7 @@ def get_requests(credentials: HTTPAuthorizationCredentials = Depends(security)):
         SELECT fr.id, u.id as sender_id, u.name, u.profile_image
         FROM friend_requests fr
         JOIN users u ON fr.sender_id = u.id
-        WHERE fr.receiver_id=? AND fr.status='pending'
+        WHERE fr.receiver_id=%s AND fr.status='pending'
     """,
         (user_id,),
     )
@@ -1953,7 +1922,7 @@ def respond_request(
     cursor = conn.cursor()
 
     # 🔍 get current user
-    cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
     user = cursor.fetchone()
 
     if not user:
@@ -1964,7 +1933,7 @@ def respond_request(
     # 🔍 get request
     cursor.execute(
         """
-        SELECT receiver_id FROM friend_requests WHERE id=?
+        SELECT receiver_id FROM friend_requests WHERE id=%s
     """,
         (request_id,),
     )
@@ -1982,8 +1951,8 @@ def respond_request(
     cursor.execute(
         """
         UPDATE friend_requests 
-        SET status=? 
-        WHERE id=?
+        SET status=%s 
+        WHERE id=%s
     """,
         (status, request_id),
     )
@@ -2037,7 +2006,7 @@ def get_friends(credentials: HTTPAuthorizationCredentials = Depends(security)):
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
     user = cursor.fetchone()
     user_id = user["id"]
 
@@ -2049,8 +2018,8 @@ def get_friends(credentials: HTTPAuthorizationCredentials = Depends(security)):
         ON (u.id = fr.sender_id OR u.id = fr.receiver_id)
         WHERE 
             fr.status='accepted'
-            AND (fr.sender_id=? OR fr.receiver_id=?)
-            AND u.id != ?
+            AND (fr.sender_id=%s OR fr.receiver_id=%s)
+            AND u.id != %s
     """,
         (user_id, user_id, user_id),
     )
@@ -2091,7 +2060,7 @@ async def create_post(
     cursor.execute(
         """
         INSERT INTO feed_posts (user_email, content, type, tags, image, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s)
     """,
         (email, content, "POST", tags, image_path, datetime.utcnow().isoformat()),
     )
@@ -2117,7 +2086,7 @@ def change_password(
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT password FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT password FROM users WHERE email=%s", (email,))
     user = cursor.fetchone()
 
     if not user:
@@ -2128,7 +2097,7 @@ def change_password(
 
     new_hashed = hash_password(data.new_password)
 
-    cursor.execute("UPDATE users SET password=? WHERE email=?", (new_hashed, email))
+    cursor.execute("UPDATE users SET password=%s WHERE email=%s", (new_hashed, email))
 
     conn.commit()
     conn.close()
@@ -2147,7 +2116,7 @@ def update_streak(credentials: HTTPAuthorizationCredentials = Depends(security))
     cursor.execute(
         """
         SELECT learning_streak, last_active_date
-        FROM users WHERE email=?
+        FROM users WHERE email=%s
     """,
         (email,),
     )
@@ -2182,8 +2151,8 @@ def update_streak(credentials: HTTPAuthorizationCredentials = Depends(security))
     cursor.execute(
         """
         UPDATE users
-        SET learning_streak=?, last_active_date=?
-        WHERE email=?
+        SET learning_streak=%s, last_active_date=%s
+        WHERE email=%s
     """,
         (streak, today.isoformat(), email),
     )
@@ -2203,7 +2172,7 @@ def remove_friend(
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
     current = cursor.fetchone()
 
     if not current:
@@ -2217,9 +2186,9 @@ def remove_friend(
         WHERE 
             status='accepted' AND
             (
-                (sender_id=? AND receiver_id=?)
+                (sender_id=%s AND receiver_id=%s)
                 OR
-                (sender_id=? AND receiver_id=?)
+                (sender_id=%s AND receiver_id=%s)
             )
     """,
         (current_user_id, user_id, user_id, current_user_id),
@@ -2253,18 +2222,18 @@ def get_feed(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
     for p in posts:
         # 🔢 total likes
-        cursor.execute("SELECT COUNT(*) FROM post_likes WHERE post_id=?", (p["id"],))
+        cursor.execute("SELECT COUNT(*) FROM post_likes WHERE post_id=%s", (p["id"],))
         likes = cursor.fetchone()[0]
 
         # ❤️ check if current user liked
         cursor.execute(
-            "SELECT 1 FROM post_likes WHERE post_id=? AND user_email=?",
+            "SELECT 1 FROM post_likes WHERE post_id=%s AND user_email=%s",
             (p["id"], email),
         )
         liked = cursor.fetchone() is not None
 
         # 💬 total comments
-        cursor.execute("SELECT COUNT(*) FROM post_comments WHERE post_id=?", (p["id"],))
+        cursor.execute("SELECT COUNT(*) FROM post_comments WHERE post_id=%s", (p["id"],))
         comments = cursor.fetchone()[0]
 
         result.append(
@@ -2300,7 +2269,7 @@ def get_inbox(credentials: HTTPAuthorizationCredentials = Depends(security)):
     cursor = conn.cursor()
 
     # 🔍 get current user
-    cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
     user = cursor.fetchone()
     user_id = user["id"]
 
@@ -2309,12 +2278,12 @@ def get_inbox(credentials: HTTPAuthorizationCredentials = Depends(security)):
         """
         SELECT 
             CASE 
-                WHEN sender_id = ? THEN receiver_id
+                WHEN sender_id = %s THEN receiver_id
                 ELSE sender_id
             END as other_user_id,
             MAX(created_at) as last_time
         FROM direct_messages
-        WHERE sender_id = ? OR receiver_id = ?
+        WHERE sender_id = %s OR receiver_id = %s
         GROUP BY other_user_id
         ORDER BY last_time DESC
         """,
@@ -2329,7 +2298,7 @@ def get_inbox(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
         # 👤 get user info
         cursor.execute(
-            "SELECT id, name, profile_image FROM users WHERE id=?",
+            "SELECT id, name, profile_image FROM users WHERE id=%s",
             (other_id,),
         )
         user_data = cursor.fetchone()
@@ -2341,11 +2310,11 @@ def get_inbox(credentials: HTTPAuthorizationCredentials = Depends(security)):
             FROM direct_messages
             WHERE 
             (
-                sender_id=? AND receiver_id=? AND deleted_for_sender=0
+                sender_id=%s AND receiver_id=%s AND deleted_for_sender=0
             )
             OR
             (
-                sender_id=? AND receiver_id=? AND deleted_for_receiver=0
+                sender_id=%s AND receiver_id=%s AND deleted_for_receiver=0
             )
             ORDER BY created_at DESC LIMIT 1
             """,
@@ -2360,8 +2329,8 @@ def get_inbox(credentials: HTTPAuthorizationCredentials = Depends(security)):
         cursor.execute(
             """
             SELECT COUNT(*) FROM direct_messages
-            WHERE sender_id=? 
-            AND receiver_id=? 
+            WHERE sender_id=%s 
+            AND receiver_id=%s 
             AND is_read=0
             """,
             (other_id, user_id),
@@ -2400,7 +2369,7 @@ def delete_message(
     cursor = conn.cursor()
 
     # 🔍 get user id
-    cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
     user = cursor.fetchone()
 
     if not user:
@@ -2413,7 +2382,7 @@ def delete_message(
         """
         SELECT sender_id, receiver_id, file_url 
         FROM direct_messages 
-        WHERE id=?
+        WHERE id=%s
     """,
         (message_id,),
     )
@@ -2432,7 +2401,7 @@ def delete_message(
             """
             UPDATE direct_messages
             SET deleted_for_sender=1, deleted_for_receiver=1
-            WHERE id=?
+            WHERE id=%s
         """,
             (message_id,),
         )
@@ -2453,7 +2422,7 @@ def delete_message(
                 """
                 UPDATE direct_messages
                 SET deleted_for_sender=1
-                WHERE id=?
+                WHERE id=%s
             """,
                 (message_id,),
             )
@@ -2462,7 +2431,7 @@ def delete_message(
                 """
                 UPDATE direct_messages
                 SET deleted_for_receiver=1
-                WHERE id=?
+                WHERE id=%s
             """,
                 (message_id,),
             )
@@ -2485,7 +2454,7 @@ def get_messages(
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
     current = cursor.fetchone()
     current_user_id = current["id"]
 
@@ -2497,7 +2466,7 @@ def get_messages(
         """
         UPDATE direct_messages
         SET is_read = 1
-        WHERE sender_id=? AND receiver_id=?
+        WHERE sender_id=%s AND receiver_id=%s
         """,
         (user_id, current_user_id),
     )
@@ -2513,11 +2482,11 @@ def get_messages(
         JOIN users u ON dm.sender_id = u.id
         WHERE 
         (
-            dm.sender_id=? AND dm.receiver_id=? AND dm.deleted_for_sender=0
+            dm.sender_id=%s AND dm.receiver_id=%s AND dm.deleted_for_sender=0
         )
         OR
         (
-            dm.sender_id=? AND dm.receiver_id=? AND dm.deleted_for_receiver=0
+            dm.sender_id=%s AND dm.receiver_id=%s AND dm.deleted_for_receiver=0
         )
         ORDER BY dm.created_at ASC
         """,
@@ -2541,7 +2510,7 @@ def get_comments(post_id: int):
         SELECT c.*, u.name, u.profile_image
         FROM post_comments c
         JOIN users u ON c.user_email = u.email
-        WHERE c.post_id=?
+        WHERE c.post_id=%s
         ORDER BY c.created_at DESC
     """,
         (post_id,),
