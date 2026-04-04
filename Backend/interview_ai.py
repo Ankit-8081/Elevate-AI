@@ -13,7 +13,7 @@ load_dotenv()
 
 model = ChatGroq(
     model="llama-3.3-70b-versatile",
-    groq_api_key=os.getenv("GROQ-API-KEY")
+    groq_api_key=os.getenv("GROQ_API_KEY")
 )
 
 question_prompt = ChatPromptTemplate.from_template(

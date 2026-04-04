@@ -31,7 +31,7 @@ class TopicValidation(BaseModel):
     reason: str = Field(..., description="A short reason why the topic was accepted or rejected.")
 
 class Roadmap:
-    def __init__(self, api_key: str | None = None, model_name: str = "openai/gpt-oss-120b"):
+    def __init__(self, api_key: str | None = None, model_name: str = "llama-3.3-70b-versatile"):
         actual_key = api_key if api_key is not None else os.getenv("GROQ_API_KEY")
         self.llm = ChatGroq(model=model_name, temperature=0)
         self.structured_llm = self.llm.with_structured_output(LearningRoadmap)
@@ -164,5 +164,3 @@ Rules:
             return {"error": f"Topic '{topic}' is not a valid technical domain. Please try again."}
 
         return self.generate_roadmap(corrected_topic, experience_level, learning_style, upper_limit)
-
- 

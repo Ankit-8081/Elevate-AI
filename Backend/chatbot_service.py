@@ -1,7 +1,13 @@
 from chatbot import PersistentChatbot
 import json
-bot = PersistentChatbot()
+import psycopg2
+import psycopg2.extras
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
+
+bot = PersistentChatbot()
 sessions = {}
 
 def get_user_session(user_id: str):
@@ -9,36 +15,34 @@ def get_user_session(user_id: str):
         sessions[user_id] = bot.generate_session_id()
     return sessions[user_id]
 
-import sqlite3
-
-conn = sqlite3.connect("users.db", check_same_thread=False)
-cursor = conn.cursor()
-
-
+def get_db():
+    conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+    conn.cursor_factory = psycopg2.extras.RealDictCursor
+    return conn
 
 def ask_bot(user_email: str, message: str):
-    # 1. Fetch user profile (Your existing logic)
+    conn = get_db()
+    cursor = conn.cursor()
+
     cursor.execute(
-        "SELECT username, market_readiness, skills FROM users WHERE email = ?",
+        'SELECT username, market_readiness, skills FROM users WHERE email = %s',
         (user_email,)
     )
     user = cursor.fetchone()
+    conn.close()
 
     if user:
-        name, readiness, skills = user
-        skills = json.loads(skills) if skills else []
+        name = user["username"]
+        readiness = user["market_readiness"]
+        skills = json.loads(user["skills"]) if user["skills"] else []
     else:
         name, readiness, skills = "User", "Unknown", []
 
-    # 2. Format the context (Keep it clean)
     user_context = f"Name: {name}, Readiness: {readiness}, Skills: {', '.join(skills)}"
 
-    # 3. PASS THE RAW MESSAGE
-    # Don't wrap the message in a 'full_prompt' string anymore. 
-    # Let the PersistentChatbot handle the prompt template.
     response = bot.ask(
-        query=message, 
-        session_id=user_email, 
+        query=message,
+        session_id=user_email,
         user_context=user_context
     )
 
