@@ -631,8 +631,8 @@ def signup(data: SignupRequest):
             password,
             phone,
             bio,
-            current_role,
-            target_role,
+            "current_role",
+            "target_role",
             professional_links,
             created_at,
             last_active_date,
@@ -1066,8 +1066,8 @@ def update_profile(
         username=%s,
         phone=%s,
         bio=%s,
-        current_role=%s,
-        target_role=%s,
+        "current_role"=%s,
+        "target_role"=%s,
         linkedin=%s,
         professional_links=%s
     WHERE email=%s
@@ -1212,7 +1212,7 @@ SET market_readiness = %s,
     skills = %s,
     projects = %s,
     certifications = %s,
-    target_role = %s,
+    "target_role" = %s,
     resume_analysis = %s,
     best_job_role = %s
 WHERE email = %s
@@ -1537,7 +1537,7 @@ def leaderboard(credentials: HTTPAuthorizationCredentials = Depends(security)):
         SELECT 
             id,
             name,
-            current_role,
+            "current_role",
             skills,
             projects,
             roadmap,
