@@ -3,10 +3,11 @@
 ![Frontend](https://img.shields.io/badge/Frontend-React-blue)
 ![Backend](https://img.shields.io/badge/Backend-FastAPI-green)
 ![AI](https://img.shields.io/badge/AI-LangChain-orange)
-![Database](https://img.shields.io/badge/Database-SQLite-lightgrey)
+![Database](https://img.shields.io/badge/Database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Deployed](https://img.shields.io/badge/Deployed-Vercel%20%2B%20Render-black)
 
-**Elevate AI** is not just another career tool — it’s your **AI-powered career command center**.  
+**Elevate AI** is not just another career tool — it's your **AI-powered career command center**.  
 From resume analysis to interview simulation, it helps you understand where you stand, where you need to go,  
 and exactly how to get there.
 
@@ -15,19 +16,27 @@ Elevate AI acts like a **personal career coach, analyst, and mentor — all in o
 
 ---
 
+## 🌐 Live Demo
+
+- **Frontend:** [https://elevate-ai-one.vercel.app](https://elevate-ai-one.vercel.app)
+- **Backend API:** [https://elevate-ai-kwat.onrender.com/docs](https://elevate-ai-kwat.onrender.com/docs)
+
+---
+
 ## 🚀 Key Highlights
 
 - ⚡ End-to-end AI-driven career platform  
-- 🧠 Multi-LLM integration (Grok + Gemini + Tavily)  
+- 🧠 Multi-LLM integration (Groq + Gemini + Tavily)  
 - 📊 Real-time skill gap analysis  
 - 🎥 Computer vision-based interview feedback  
 - 🌐 Full-stack platform with integrated social + career ecosystem  
+- ☁️ Fully deployed on cloud (Vercel + Render + Neon PostgreSQL)
 
 ---
 
 ## 📌 What Problem Does It Solve?
 
-Most people don’t know:
+Most people don't know:
 
 - What skills they actually have  
 - What skills they are missing  
@@ -51,7 +60,7 @@ Elevate AI is designed to solve the **entire career loop**:
 - 🎥 Practice real-world scenarios (Interview Simulator)  
 - 🌐 Apply and grow (Job Finder + Social Layer)  
 
-It’s not just a tool — it’s a **continuous career improvement system**.
+It's not just a tool — it's a **continuous career improvement system**.
 
 ---
 
@@ -105,15 +114,17 @@ It’s not just a tool — it’s a **continuous career improvement system**.
 
 Elevate AI follows a **modular AI-driven client-server architecture**:
 
-### 🔹 Frontend (React)
+### 🔹 Frontend (React + Vite)
 - Handles UI/UX  
 - Communicates via REST APIs  
 - Real-time updates  
+- Deployed on **Vercel**
 
 ### 🔹 Backend (FastAPI)
 - Core logic and APIs  
 - Authentication (JWT)  
 - Resume + job processing  
+- Deployed on **Render**
 
 ### 🔹 AI Layer (LangChain)
 - Agentic workflows  
@@ -121,33 +132,37 @@ Elevate AI follows a **modular AI-driven client-server architecture**:
 - Multi-API orchestration  
 
 ### 🔹 External APIs
-- **Grok** → reasoning, roadmap generation, interview questions  
+- **Groq** → reasoning, roadmap generation, interview questions  
 - **Tavily** → retrieval of learning resources  
 - **Gemini** → video + resume analysis  
 - **Apify** → scraping job listings from platforms like Naukri  
 - **SerpAPI** → fetching job results from web search (Google Jobs, etc.)
 
-### 🔹 Database (SQLite)
+### 🔹 Database (PostgreSQL via Neon) ✨ *Upgraded from SQLite*
 - User data, resumes, chats  
 - Social features  
+- Cloud-hosted, persistent, scalable
 
 ### 🔹 Authentication
 - JWT-based auth  
 - bcrypt password hashing  
 
 **Flow:**  
-User → Frontend → Backend → AI Layer → External APIs → Response
+User → Frontend (Vercel) → Backend (Render) → AI Layer → External APIs → Neon PostgreSQL
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Backend:** FastAPI (Python)  
-- **Frontend:** React  
-- **Database:** SQLite3  
-- **Auth:** JWT + bcrypt  
-- **AI:** LangChain  
-- **APIs:** Grok, Tavily, Gemini  
+| Layer | Technology |
+|---|---|
+| **Frontend** | React + Vite + Tailwind CSS |
+| **Backend** | FastAPI (Python) |
+| **Database** | PostgreSQL (Neon) |
+| **Auth** | JWT + bcrypt |
+| **AI** | LangChain + LangGraph |
+| **APIs** | Groq, Tavily, Gemini, Apify, SerpAPI |
+| **Deployment** | Vercel (Frontend) + Render (Backend) |
 
 ---
 
@@ -155,8 +170,8 @@ User → Frontend → Backend → AI Layer → External APIs → Response
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/Aayush20253534/ELEVATEAI.git
-cd ELEVATEAI
+git clone https://github.com/Ankit-8081/Elevate-AI.git
+cd Elevate-AI
 ```
 
 ### 2. Backend Setup
@@ -165,13 +180,18 @@ cd Backend
 python -m venv venv
 ```
 
-#### Activate the environmen
+#### Activate the environment
 ```bash
 # Windows
 venv\Scripts\activate
 
 # Linux / Mac
 source venv/bin/activate
+```
+
+#### Install dependencies
+```bash
+pip install -r requirements.txt
 ```
 
 #### Running the backend server
@@ -187,12 +207,21 @@ npm run dev
 ```
 
 ### 4. Environment Variables
-```python
-GROK_API_KEY=
-TAVILY_API_KEY=
-GEMINI_API_KEY=
-APIFY_TOKEN=
-Serp_API_Key=
+
+**Backend (`Backend/.env`):**
+```
+DATABASE_URL=your_postgresql_connection_string
+GOOGLE_API_KEY=your_gemini_key
+GROQ_API_KEY=your_groq_key
+TAVILY_API_KEY=your_tavily_key
+APIFY_TOKEN=your_apify_token
+Serp_API_Key=your_serpapi_key
+SECRET_KEY=your_secret_key
+```
+
+**Frontend (`.env` in project root):**
+```
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
 ---
@@ -244,11 +273,16 @@ Serp_API_Key=
 
 ## 📁 Project Structure
 
-```bash
-/ELEVATEAI
+```
+/Elevate-AI
 │
 ├── Backend/
 │   ├── agentic_workflow/
+│   │   └── resume_builder_agent/
+│   │       ├── builder.py
+│   │       ├── main.py
+│   │       ├── memory.py
+│   │       └── middleware.py
 │   ├── profile_images/
 │   ├── resume/
 │   ├── uploads/
@@ -260,28 +294,40 @@ Serp_API_Key=
 │   ├── resume_analyse.py
 │   ├── Roadmap.py
 │   ├── web_scraping.py
-│   ├── users.db
-│   └── requirements.txt
+│   ├── requirements.txt
+│   └── runtime.txt
 │
 ├── src/
+│   ├── pages/
+│   └── components/
 ├── assets/
 │
 ├── .gitignore
+├── vercel.json
 ├── eslint.config.js
 ├── index.html
-├── package-lock.json
 ├── package.json
-├── postcss.config.js
 ├── tailwind.config.js
 ├── vite.config.js
 └── README.md
-
 ```
+
+---
+
+## ☁️ Deployment
+
+This project is fully deployed using a free-tier cloud stack:
+
+| Service | Provider | Purpose |
+|---|---|---|
+| Frontend | Vercel | React app hosting |
+| Backend | Render | FastAPI server |
+| Database | Neon | PostgreSQL hosting |
+
 ---
 
 ## 📊 Future Improvements
 
-- Migration from SQLite to PostgreSQL for scalability  
 - Real-time notifications and WebSocket integration  
 - Advanced AI personalization using long-term user behavior tracking  
 - Resume scoring based on real recruiter datasets  
@@ -312,5 +358,4 @@ You are free to use, modify, and distribute this software with proper attributio
 - **Shreyansh Kushwaha** – Backend Development, Authentication  
 - **Prateek Rastogi** – AI Integration (Chatbot, Roadmap, etc.)  
 - **Rasika Kajale** – Database and Creative Direction  
-
-
+- **Ankit** – Cloud Deployment, Database Migration (SQLite → PostgreSQL), DevOps
