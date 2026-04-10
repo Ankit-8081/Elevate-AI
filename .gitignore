@@ -181,4 +181,16 @@ __marimo__/
 # Frontend build output
 dist/
 .DS_Store
-*.local
+*.local.env
+env
+*.env
+cat >> .gitignore << 'EOF'
+.env
+env
+*.env
+
+
+
+.env.*
+.DS_Store
+**/.DS_Store
