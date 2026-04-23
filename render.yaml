@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: elevate-ai-backend
+    env: python
+    region: singapore   # closest free-tier region to India
+    plan: free
+    rootDir: Backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /docs
+
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # fill manually in Render dashboard
+
+      - key: GOOGLE_API_KEY
+        sync: false
+
+      - key: GROQ_API_KEY
+        sync: false
+
+      - key: TAVILY_API_KEY
+        sync: false
+
+      - key: APIFY_TOKEN
+        sync: false
+
+      - key: Serp_API_Key
+        sync: false
+
+      - key: SECRET_KEY
+        sync: false
+
+      - key: PYTHON_VERSION
+        value: 3.11.0        # match your runtime.txt
