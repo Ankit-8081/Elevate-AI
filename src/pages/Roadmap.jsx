@@ -4,7 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Map, Zap, Brain, CheckCircle2, Sparkles, TrendingUp,
-  ChevronDown, BookOpen, Clock, Download, ExternalLink, Info
+  ChevronDown, BookOpen, Clock, Download, ExternalLink, Info,
+  Trash2, AlertTriangle
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import Sidebar from '../components/sidebar';
@@ -17,13 +18,67 @@ const ROLE_SKILLS = {
   "DevOps Engineer": ["Docker", "Kubernetes", "CI/CD", "AWS", "Linux"]
 };
 
-const SkillRoadmap = () => {
+/* ─────────────────────────────────────────────
+   CLEAR ROADMAP CONFIRMATION MODAL
+───────────────────────────────────────────── */
+const ClearRoadmapModal = ({ onConfirm, onCancel }) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+    onClick={onCancel}
+  >
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95, y: 16 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: 16 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      onClick={(e) => e.stopPropagation()}
+      className="w-full max-w-md bg-[#0d1117] border border-red-500/20 rounded-2xl p-6 shadow-[0_30px_80px_rgba(0,0,0,0.8)]"
+    >
+      <div className="flex justify-center mb-5">
+        <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+          <AlertTriangle size={26} className="text-red-400" />
+        </div>
+      </div>
 
+      <h2 className="text-xl font-bold text-white text-center mb-2">Clear Roadmap</h2>
+      <p className="text-sm text-slate-400 text-center mb-1">
+        This will <span className="text-red-400 font-semibold">permanently delete</span> your current roadmap.
+      </p>
+      <p className="text-sm text-slate-500 text-center mb-6">
+        All your progress, streaks, and skill statuses will be reset.
+      </p>
+
+      <div className="flex gap-3">
+        <button
+          onClick={onCancel}
+          className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-semibold text-slate-300 transition-all"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 border border-red-500/30 text-sm font-bold text-white transition-all flex items-center justify-center gap-2"
+        >
+          <Trash2 size={15} /> Clear Roadmap
+        </button>
+      </div>
+    </motion.div>
+  </motion.div>
+);
+
+/* ─────────────────────────────────────────────
+   MAIN COMPONENT
+───────────────────────────────────────────── */
+const SkillRoadmap = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
   const [role, setRole] = useState("");
   const [roadmapData, setRoadmapData] = useState([]);
   const [user, setUser] = useState(null);
@@ -31,402 +86,241 @@ const SkillRoadmap = () => {
   const [streak, setStreak] = useState(0);
   const highlightSkill = location.state?.highlightSkill;
   const openStageId = highlightSkill
-  ? roadmapData.find(stage =>
-      stage.skills?.some(s => s.name === highlightSkill)
-    )?.id
-  : null;
+    ? roadmapData.find(stage => stage.skills?.some(s => s.name === highlightSkill))?.id
+    : null;
   const [experience, setExperience] = useState("Beginner");
-  const [learningStyle, setLearningStyle] = useState("Project Based");;
-  useEffect(() => {
-
-  const token = localStorage.getItem("token");
-
-  if (location.state?.trigger === "resume") {
-
-    axios.get(`${API}/me`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => {
-
-      if (res.data.target_role) {
-        setRole(res.data.target_role);
-      }
-
-    });
-
-  }
-
-}, [location.state]);
+  const [learningStyle, setLearningStyle] = useState("Project Based");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
+    if (location.state?.trigger === "resume") {
+      axios.get(`${API}/me`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => { if (res.data.target_role) setRole(res.data.target_role); });
     }
+  }, [location.state]);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) { navigate("/login"); return; }
 
- axios.get(`${API}/me`, {
-  headers: { Authorization: `Bearer ${token}` }
-})
-.then(res => {
-  setUser(res.data);
-  setStreak(res.data.learning_streak || 0);
-})
-.catch(err => console.error(err));
+    axios.get(`${API}/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => { setUser(res.data); setStreak(res.data.learning_streak || 0); })
+      .catch(err => console.error(err));
 
-axios.get(`${API}/roadmap/user`, {
-  headers: { Authorization: `Bearer ${token}` }
-})
-.then(res => {
-  if (res.data && res.data.roadmap) {
-    setRoadmapData(res.data.roadmap);
-    setShowRoadmap(true);
-  }
-})
-.catch(() => {});
+    axios.get(`${API}/roadmap/user`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => {
+        if (res.data?.roadmap?.length > 0) {
+          setRoadmapData(res.data.roadmap);
+          setShowRoadmap(true);
+        }
+      })
+      .catch(() => {});
   }, [navigate]);
 
-useEffect(() => {
-
-  if (
-    location.state?.trigger === "resume" &&
-    role.trim() !== "" &&
-    !showRoadmap
-  ) {
-    handleGenerate();
-  }
-
-}, [role]);
-
-const handleStatusChange = (stageId, skillName, newStatus) => {
-
-  let wasCompleted = false;
-
-  const newData = roadmapData.map(stage => {
-    if (stage.id === stageId) {
-      const updatedSkills = stage.skills.map(skill => {
-
-        if (skill.name === skillName) {
-          if (skill.status === "Completed") {
-            wasCompleted = true;
-          }
-
-          return { ...skill, status: newStatus };
-        }
-
-        return skill;
-      });
-
-      const completed = updatedSkills.filter(s => s.status === "Completed").length;
-      const stageProgress = Math.round((completed / updatedSkills.length) * 100);
-
-      return { ...stage, skills: updatedSkills, progress: stageProgress };
+  useEffect(() => {
+    if (location.state?.trigger === "resume" && role.trim() !== "" && !showRoadmap) {
+      handleGenerate();
     }
-    return stage;
-  });
+  }, [role]);
 
-  setRoadmapData(newData);
+  /* ── Clear roadmap handler ── */
+  const handleClearRoadmap = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post(`${API}/roadmap/save`, { roadmap: [] }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRoadmapData([]);
+      setShowRoadmap(false);
+      setRole("");
+    } catch (err) {
+      console.error("Failed to clear roadmap:", err);
+    }
+    setShowClearModal(false);
+  };
 
-  const token = localStorage.getItem("token");
-  if (!token) return;
+  const handleStatusChange = (stageId, skillName, newStatus) => {
+    let wasCompleted = false;
+    const newData = roadmapData.map(stage => {
+      if (stage.id === stageId) {
+        const updatedSkills = stage.skills.map(skill => {
+          if (skill.name === skillName) {
+            if (skill.status === "Completed") wasCompleted = true;
+            return { ...skill, status: newStatus };
+          }
+          return skill;
+        });
+        const completed = updatedSkills.filter(s => s.status === "Completed").length;
+        return { ...stage, skills: updatedSkills, progress: Math.round((completed / updatedSkills.length) * 100) };
+      }
+      return stage;
+    });
 
-  axios.post(`${API}/roadmap/save`,
-    { roadmap: newData },
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-
-  if (!wasCompleted && newStatus === "Completed") {
-    axios.post(`${API}/streak/update`, {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => {
-      setStreak(res.data.streak);
-    })
-    .catch(err => console.error(err));
-  }
-};
+    setRoadmapData(newData);
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    axios.post(`${API}/roadmap/save`, { roadmap: newData }, { headers: { Authorization: `Bearer ${token}` } });
+    if (!wasCompleted && newStatus === "Completed") {
+      axios.post(`${API}/streak/update`, {}, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => setStreak(res.data.streak))
+        .catch(err => console.error(err));
+    }
+  };
 
   const parseLearningTime = (timeStr) => {
     if (!timeStr) return 0;
-
     const lower = timeStr.toLowerCase();
-
     if (lower.includes("-")) {
       const parts = lower.split("-");
       const first = parseFloat(parts[0]);
       const second = parseFloat(parts[1]);
-      if (!isNaN(first) && !isNaN(second)) {
-        return (first + second) / 2;
-      }
+      if (!isNaN(first) && !isNaN(second)) return (first + second) / 2;
     }
-
-    if (lower.includes("min")) {
-      const num = parseFloat(lower);
-      return num / 60;
-    }
-
-    // days
-    if (lower.includes("day")) {
-      const num = parseFloat(lower);
-      return num * 6; // assume 6h/day
-    }
-
-    // hours
+    if (lower.includes("min")) return parseFloat(lower) / 60;
+    if (lower.includes("day")) return parseFloat(lower) * 6;
     const num = parseFloat(lower);
     return isNaN(num) ? 0 : num;
   };
 
   const calculateWeeks = (concepts) => {
-    const totalHours = concepts.reduce((sum, c) => {
-      return sum + parseLearningTime(c.learning_time);
-    }, 0);
-
-    const weeks = Math.ceil(totalHours / 10);
-    return `${weeks} Weeks`;
+    const totalHours = concepts.reduce((sum, c) => sum + parseLearningTime(c.learning_time), 0);
+    return `${Math.ceil(totalHours / 10)} Weeks`;
   };
-const formatRoadmapText = () => {
-  let content = `${role.toUpperCase()} ROADMAP\n\n`;
 
-  roadmapData.forEach((stage, i) => {
-    content += `STAGE ${i + 1}: ${stage.title}\n`;
-    content += `Duration: ${stage.duration}\n\n`;
-
-    stage.skills.forEach((skill, idx) => {
-      content += `${idx + 1}. ${skill.name}\n`;
-      content += `   Time: ${skill.time}\n`;
-      content += `   Status: ${skill.status}\n`;
-      content += `   Difficulty: ${skill.difficulty}\n`;
-      if (skill.url) content += `   Link: ${skill.url}\n`;
-      content += `\n`;
-    });
-
-    content += `--------------------------------------\n\n`;
-  });
-
-  return content;
-};
   const handleGenerate = async () => {
-
-    if (!role.trim()) {
-      alert("Please enter a target role");
-      return;
-    }
-
+    if (!role.trim()) { alert("Please enter a target role"); return; }
     setLoading(true);
-
     try {
       const res = await axios.post(`${API}/roadmap`, {
         topic: role,
         experience_level: experience,
         learning_style: learningStyle,
-        upper_limit: 8  });
-
+        upper_limit: 8,
+      });
       const data = res.data;
-
       const formatted = [
         {
-          id: 1,
-          title: "Foundations",
-          duration: calculateWeeks(data.basic),
-          progress: 0,
+          id: 1, title: "Foundations",
+          duration: calculateWeeks(data.basic), progress: 0,
           skills: data.basic.map(c => ({
-            name: c.title,
-            difficulty: c.toughness,
-            time: c.learning_time,
+            name: c.title, difficulty: c.toughness, time: c.learning_time,
             status: "Not Started",
             url: c.learning_link || `https://www.youtube.com/results?search_query=${encodeURIComponent(c.title)}`
           }))
         },
         {
-          id: 2,
-          title: "Core Skills",
-          duration: calculateWeeks(data.core),
-          progress: 0,
+          id: 2, title: "Core Skills",
+          duration: calculateWeeks(data.core), progress: 0,
           skills: data.core.map(c => ({
-            name: c.title,
-            difficulty: c.toughness,
-            time: c.learning_time,
+            name: c.title, difficulty: c.toughness, time: c.learning_time,
             status: "Not Started",
             url: c.learning_link || `https://www.youtube.com/results?search_query=${encodeURIComponent(c.title)}`
           }))
         },
         {
-          id: 3,
-          title: "Advanced Topics",
-          duration: calculateWeeks(data.advanced),
-          progress: 0,
+          id: 3, title: "Advanced Topics",
+          duration: calculateWeeks(data.advanced), progress: 0,
           skills: data.advanced.map(c => ({
-            name: c.title,
-            difficulty: c.toughness,
-            time: c.learning_time,
+            name: c.title, difficulty: c.toughness, time: c.learning_time,
             status: "Not Started",
             url: c.learning_link || `https://www.youtube.com/results?search_query=${encodeURIComponent(c.title)}`
           }))
         }
       ];
 
-     setRoadmapData(formatted);
-     setShowRoadmap(true);
+      setRoadmapData(formatted);
+      setShowRoadmap(true);
 
+      const token = localStorage.getItem("token");
+      await axios.post(`${API}/roadmap/save`, { roadmap: formatted }, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/roadmap/reset`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      setStreak(0);
 
-    const token = localStorage.getItem("token");
-
-await 
-axios.post(`${API}/roadmap/save`,
-  { roadmap: formatted },
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-
-await axios.post(`${API}/roadmap/reset`, {}, {
-  headers: { Authorization: `Bearer ${token}` }
-});
-
-setStreak(0); 
-
-const userRes = await axios.get(`${API}/me`, {
-  headers: { Authorization: `Bearer ${token}` }
-});
-setUser(userRes.data);
-
+      const userRes = await axios.get(`${API}/me`, { headers: { Authorization: `Bearer ${token}` } });
+      setUser(userRes.data);
     } catch (err) {
       console.error(err);
     }
-
     setLoading(false);
   };
 
-const downloadRoadmap = () => {
-  const pdf = new jsPDF();
-  let y = 20;
-
-  // 🖤 BACKGROUND + HEADER
-  const drawBackground = () => {
-    pdf.setFillColor(10, 10, 15);
-    pdf.rect(0, 0, 210, 297, "F");
-
-    // HEADER
-    pdf.setFillColor(30, 41, 59);
-    pdf.rect(0, 0, 210, 25, "F");
-
-    pdf.setTextColor(96, 165, 250);
-    pdf.setFont("Helvetica", "bold");
-    pdf.setFontSize(18);
-    pdf.text(`${(role || "Career").toUpperCase()} ROADMAP`, 10, 15);
+  const downloadRoadmap = () => {
+    const pdf = new jsPDF();
+    let y = 20;
+    const drawBackground = () => {
+      pdf.setFillColor(10, 10, 15);
+      pdf.rect(0, 0, 210, 297, "F");
+      pdf.setFillColor(30, 41, 59);
+      pdf.rect(0, 0, 210, 25, "F");
+      pdf.setTextColor(96, 165, 250);
+      pdf.setFont("Helvetica", "bold");
+      pdf.setFontSize(18);
+      pdf.text(`${(role || "Career").toUpperCase()} ROADMAP`, 10, 15);
+    };
+    drawBackground();
+    y = 35;
+    roadmapData.forEach((stage, i) => {
+      if (y > 260) { pdf.addPage(); drawBackground(); y = 30; }
+      pdf.setFillColor(20, 20, 30);
+      pdf.roundedRect(10, y, 190, 20, 4, 4, "F");
+      const cleanTitle = stage.title?.split(":")[1]?.trim() || stage.title;
+      pdf.setTextColor(96, 165, 250);
+      pdf.setFontSize(10);
+      pdf.text(`STAGE ${i + 1}`, 14, y + 7);
+      pdf.setTextColor(255);
+      pdf.setFontSize(12);
+      pdf.text(cleanTitle, 14, y + 14);
+      y += 24;
+      pdf.setTextColor(148, 163, 184);
+      pdf.setFontSize(9);
+      pdf.text(`Duration: ${stage.duration}`, 14, y);
+      y += 10;
+      stage.skills.forEach((skill, idx) => {
+        if (y > 260) { pdf.addPage(); drawBackground(); y = 30; }
+        pdf.setFillColor(30, 30, 45);
+        pdf.roundedRect(12, y - 4, 186, 34, 3, 3, "F");
+        pdf.setTextColor(255);
+        pdf.setFont("Helvetica", "bold");
+        pdf.setFontSize(10);
+        pdf.text(`${idx + 1}. ${skill.name}`, 16, y + 2);
+        y += 10;
+        let color = [34, 197, 94];
+        if (skill.difficulty?.toLowerCase() === "medium") color = [234, 179, 8];
+        if (skill.difficulty?.toLowerCase() === "hard") color = [239, 68, 68];
+        pdf.setFillColor(...color);
+        pdf.roundedRect(150, y - 6, 35, 7, 2, 2, "F");
+        pdf.setTextColor(0);
+        pdf.setFontSize(8);
+        pdf.text(skill.difficulty || "Easy", 152, y - 1);
+        pdf.setFillColor(40, 40, 60);
+        pdf.roundedRect(16, y - 4, 45, 8, 2, 2, "F");
+        pdf.setTextColor(148, 163, 184);
+        pdf.setFontSize(8);
+        pdf.text(`Time: ${skill.time}`, 18, y + 1);
+        y += 12;
+        if (skill.url) {
+          pdf.setFillColor(20, 20, 30);
+          pdf.roundedRect(16, y - 2, 170, 12, 2, 2, "F");
+          pdf.setTextColor(96, 165, 250);
+          pdf.setFontSize(7);
+          const link = pdf.splitTextToSize(skill.url, 160);
+          pdf.text(link, 18, y + 4);
+          y += link.length * 4 + 6;
+        } else {
+          y += 4;
+        }
+        y += 6;
+      });
+      pdf.setDrawColor(50);
+      pdf.line(10, y, 200, y);
+      y += 12;
+    });
+    pdf.save(`${(role || "Career")}_Dark_Roadmap.pdf`);
   };
 
-  drawBackground();
-  y = 35;
-
-  roadmapData.forEach((stage, i) => {
-    // 🧠 PAGE BREAK
-    if (y > 260) {
-      pdf.addPage();
-      drawBackground();
-      y = 30;
-    }
-
-    // 🧱 STAGE CARD
-    pdf.setFillColor(20, 20, 30);
-    pdf.roundedRect(10, y, 190, 20, 4, 4, "F");
-
-    const cleanTitle =
-      stage.title?.split(":")[1]?.trim() || stage.title;
-
-    pdf.setTextColor(96, 165, 250);
-    pdf.setFontSize(10);
-    pdf.text(`STAGE ${i + 1}`, 14, y + 7);
-
-    pdf.setTextColor(255);
-    pdf.setFontSize(12);
-    pdf.text(cleanTitle, 14, y + 14);
-
-    y += 24;
-
-    // ⏱ DURATION
-    pdf.setTextColor(148, 163, 184);
-    pdf.setFontSize(9);
-    pdf.text(`Duration: ${stage.duration}`, 14, y);
-
-    y += 10;
-
-    stage.skills.forEach((skill, idx) => {
-      if (y > 260) {
-        pdf.addPage();
-        drawBackground();
-        y = 30;
-      }
-
-      // 🧩 SKILL CARD
-      pdf.setFillColor(30, 30, 45);
-      pdf.roundedRect(12, y - 4, 186, 34, 3, 3, "F");
-
-      // 🔢 TITLE
-      pdf.setTextColor(255);
-      pdf.setFont("Helvetica", "bold");
-      pdf.setFontSize(10);
-      pdf.text(`${idx + 1}. ${skill.name}`, 16, y + 2);
-
-      y += 10;
-
-      // 🎨 DIFFICULTY BADGE
-      let color = [34, 197, 94]; // easy
-      if (skill.difficulty?.toLowerCase() === "medium")
-        color = [234, 179, 8];
-      if (skill.difficulty?.toLowerCase() === "hard")
-        color = [239, 68, 68];
-
-      pdf.setFillColor(...color);
-      pdf.roundedRect(150, y - 6, 35, 7, 2, 2, "F");
-
-      pdf.setTextColor(0);
-      pdf.setFontSize(8);
-      pdf.text(skill.difficulty || "Easy", 152, y - 1);
-
-      // 🕒 TIME BADGE (NO EMOJI)
-      pdf.setFillColor(40, 40, 60);
-      pdf.roundedRect(16, y - 4, 45, 8, 2, 2, "F");
-
-      pdf.setTextColor(148, 163, 184);
-      pdf.setFontSize(8);
-      pdf.text(`Time: ${skill.time}`, 18, y + 1);
-
-      y += 12;
-
-      // 🔗 LINK CARD
-      if (skill.url) {
-        pdf.setFillColor(20, 20, 30);
-        pdf.roundedRect(16, y - 2, 170, 12, 2, 2, "F");
-
-        pdf.setTextColor(96, 165, 250);
-        pdf.setFontSize(7);
-
-        const link = pdf.splitTextToSize(skill.url, 160);
-        pdf.text(link, 18, y + 4);
-
-        y += link.length * 4 + 6;
-      } else {
-        y += 4;
-      }
-
-      y += 6; // spacing between skills
-    });
-
-    // divider
-    pdf.setDrawColor(50);
-    pdf.line(10, y, 200, y);
-
-    y += 12;
-  });
-
-  pdf.save(`${(role || "Career")}_Dark_Roadmap.pdf`);
-};
   const normalizedRole = role.trim();
   const requiredSkills = ROLE_SKILLS[normalizedRole] || [];
-  const skillGaps = user?.skills
-    ? requiredSkills.filter(skill => !user.skills.includes(skill))
-    : [];
-
+  const skillGaps = user?.skills ? requiredSkills.filter(skill => !user.skills.includes(skill)) : [];
   const allSkills = roadmapData.flatMap(s => s.skills);
   const totalCompleted = allSkills.filter(s => s.status === "Completed").length;
   const globalProgress = allSkills.length > 0 ? Math.round((totalCompleted / allSkills.length) * 100) : 0;
@@ -437,6 +331,8 @@ const downloadRoadmap = () => {
 
       <main style={{ marginLeft: "var(--sidebar-width)" }} className="flex-1 flex flex-col overflow-y-auto">
         <div className="p-8 max-w-7xl mx-auto w-full">
+
+          {/* ── Header ── */}
           <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent flex items-center gap-3">
@@ -446,15 +342,27 @@ const downloadRoadmap = () => {
             </div>
 
             {showRoadmap && (
-              <button
-                onClick={downloadRoadmap}
-                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg border border-slate-700 transition-all text-sm font-semibold shadow-xl"
-              >
-                <Download size={16} /> Download Path
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Download */}
+                <button
+                  onClick={downloadRoadmap}
+                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg border border-slate-700 transition-all text-sm font-semibold shadow-xl"
+                >
+                  <Download size={16} /> Download Path
+                </button>
+
+                {/* Clear Roadmap */}
+                <button
+                  onClick={() => setShowClearModal(true)}
+                  className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 px-4 py-2 rounded-lg border border-red-500/20 hover:border-red-500/40 transition-all text-sm font-semibold"
+                >
+                  <Trash2 size={16} /> Clear Roadmap
+                </button>
+              </div>
             )}
           </header>
 
+          {/* ── Generator Form ── */}
           <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 backdrop-blur-xl mb-8">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
               <div>
@@ -497,11 +405,15 @@ const downloadRoadmap = () => {
                 onClick={handleGenerate}
                 className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all h-[42px]"
               >
-                {loading ? <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Sparkles size={18} /> Generate Roadmap</>}
+                {loading
+                  ? <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  : <><Sparkles size={18} /> Generate Roadmap</>
+                }
               </button>
             </div>
           </section>
 
+          {/* ── Main Grid ── */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-8" ref={roadmapRef}>
               <AnimatePresence mode="wait">
@@ -513,13 +425,13 @@ const downloadRoadmap = () => {
                   >
                     {roadmapData.map((stage, index) => (
                       <StageCard
-  key={stage.id}
-  stage={stage}
-  index={index}
-  highlightSkill={highlightSkill}
-  openStageId={openStageId}
-  onStatusChange={handleStatusChange}
-/>
+                        key={stage.id}
+                        stage={stage}
+                        index={index}
+                        highlightSkill={highlightSkill}
+                        openStageId={openStageId}
+                        onStatusChange={handleStatusChange}
+                      />
                     ))}
                   </motion.div>
                 ) : (
@@ -531,6 +443,7 @@ const downloadRoadmap = () => {
               </AnimatePresence>
             </div>
 
+            {/* ── Sidebar ── */}
             <aside className="lg:col-span-4 space-y-6">
               <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 backdrop-blur-md sticky top-8">
                 <div className="flex items-center justify-between mb-4">
@@ -563,11 +476,20 @@ const downloadRoadmap = () => {
                           <>
                             <InsightItem
                               title="Skill Gaps"
-                              desc={skillGaps.length ? `You should focus on learning: ${skillGaps.slice(0, 3).join(", ")}.` : "Your core skillset already aligns well with this role."}
+                              desc={skillGaps.length
+                                ? `You should focus on learning: ${skillGaps.slice(0, 3).join(", ")}.`
+                                : "Your core skillset already aligns well with this role."
+                              }
                             />
                             <InsightItem
                               title="Job Readiness"
-                              desc={user.market_readiness === "High" ? "You appear ready for interviews." : user.market_readiness === "Medium" ? "Partially ready. Close a few gaps." : "Significant preparation needed."}
+                              desc={
+                                user.market_readiness === "High"
+                                  ? "You appear ready for interviews."
+                                  : user.market_readiness === "Medium"
+                                  ? "Partially ready. Close a few gaps."
+                                  : "Significant preparation needed."
+                              }
                             />
                           </>
                         )}
@@ -578,7 +500,9 @@ const downloadRoadmap = () => {
                   <div className="pt-4 border-t border-slate-800">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium text-slate-400">Total Completion</span>
-                      <span className="text-sm font-bold text-blue-400">{showRoadmap ? globalProgress : (user?.skills ? Math.min(100, user.skills.length * 10) : 0)}%</span>
+                      <span className="text-sm font-bold text-blue-400">
+                        {showRoadmap ? globalProgress : (user?.skills ? Math.min(100, user.skills.length * 10) : 0)}%
+                      </span>
                     </div>
                     <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
                       <motion.div
@@ -590,19 +514,8 @@ const downloadRoadmap = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 mt-4">
-                    <StatBox
-  label="Streak"
-  value={`${streak} Days`}
-  icon={<TrendingUp size={14} />}
-  color="text-orange-400"
-/>
-                    <StatBox
-                      label="Modules Completed"
-                      value={`${totalCompleted}/${allSkills.length}`}
-                      icon={<CheckCircle2 size={14} />}
-                      color="text-green-400"
-                    />
-                    
+                    <StatBox label="Streak" value={`${streak} Days`} icon={<TrendingUp size={14} />} color="text-orange-400" />
+                    <StatBox label="Modules Completed" value={`${totalCompleted}/${allSkills.length}`} icon={<CheckCircle2 size={14} />} color="text-green-400" />
                   </div>
                 </div>
               </div>
@@ -610,13 +523,25 @@ const downloadRoadmap = () => {
           </div>
         </div>
       </main>
+
+      {/* ── Clear Roadmap Modal ── */}
+      <AnimatePresence>
+        {showClearModal && (
+          <ClearRoadmapModal
+            onConfirm={handleClearRoadmap}
+            onCancel={() => setShowClearModal(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
+/* ─────────────────────────────────────────────
+   SUB-COMPONENTS (unchanged)
+───────────────────────────────────────────── */
 const StageCard = ({ stage, index, onStatusChange, highlightSkill, openStageId }) => {
   const [expanded, setExpanded] = useState(openStageId === stage.id);
-
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -625,12 +550,8 @@ const StageCard = ({ stage, index, onStatusChange, highlightSkill, openStageId }
       className="relative pl-8 border-l-2 border-slate-800"
     >
       <div className={`absolute -left-[9px] top-0 h-4 w-4 rounded-full border-2 border-slate-900 transition-colors ${stage.progress === 100 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]'}`} />
-
       <div className="bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden hover:border-slate-700 transition-colors">
-        <div
-          className="p-5 cursor-pointer flex items-center justify-between"
-          onClick={() => setExpanded(!expanded)}
-        >
+        <div className="p-5 cursor-pointer flex items-center justify-between" onClick={() => setExpanded(!expanded)}>
           <div>
             <div className="flex items-center gap-3 mb-1">
               <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Stage {stage.id}</span>
@@ -655,7 +576,6 @@ const StageCard = ({ stage, index, onStatusChange, highlightSkill, openStageId }
             <ChevronDown className={`transition-transform text-slate-500 ${expanded ? 'rotate-180' : ''}`} size={20} />
           </div>
         </div>
-
         <AnimatePresence>
           {expanded && (
             <motion.div
@@ -683,88 +603,50 @@ const StageCard = ({ stage, index, onStatusChange, highlightSkill, openStageId }
 };
 
 const SkillCard = ({ skill, onStatusUpdate, highlight }) => {
-
   const skillRef = useRef(null);
-
   useEffect(() => {
-  if (highlight && skillRef.current) {
-    setTimeout(() => {
-      skillRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
-    }, 300);
-  }
-}, [highlight]);
+    if (highlight && skillRef.current) {
+      setTimeout(() => skillRef.current.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+    }
+  }, [highlight]);
 
   return (
     <motion.div
       ref={skillRef}
       whileHover={{ y: -2 }}
-      className={`p-4 rounded-xl border group transition-colors
-      ${
+      className={`p-4 rounded-xl border group transition-colors ${
         highlight
           ? "bg-red-500/10 border-red-400 shadow-[0_0_12px_rgba(239,68,68,0.6)]"
           : "bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/60"
       }`}
     >
       <div className="flex justify-between items-start mb-4">
-        <h4 className="font-semibold text-slate-200 text-sm leading-tight">
-          {skill.name}
-        </h4>
-
-        <StatusBadge
-          status={skill.status}
-          onChange={onStatusUpdate}
-        />
+        <h4 className="font-semibold text-slate-200 text-sm leading-tight">{skill.name}</h4>
+        <StatusBadge status={skill.status} onChange={onStatusUpdate} />
       </div>
-
       <div className="flex items-center justify-between text-[10px] text-slate-400">
-
         <span className={`px-2 py-0.5 rounded border uppercase font-bold ${getDiffColor(skill.difficulty)}`}>
           {skill.difficulty}
         </span>
-
-        <span className="flex items-center gap-1">
-          <Clock size={10} /> {skill.time}
-        </span>
-
-       {skill.url && (
-         <a
-  href={skill.url}
-  target="_blank"
-  rel="noopener noreferrer"
-  style={{
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-    color: "#60a5fa",
-    fontSize: "10px",
-    fontWeight: 700,
-    marginTop: "4px"
-  }}
->
-  Docs <ExternalLink size={10} />
-</a>
-       )}
-
+        <span className="flex items-center gap-1"><Clock size={10} /> {skill.time}</span>
+        {skill.url && (
+          <a href={skill.url} target="_blank" rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", gap: "4px", color: "#60a5fa", fontSize: "10px", fontWeight: 700, marginTop: "4px" }}
+          >
+            Docs <ExternalLink size={10} />
+          </a>
+        )}
       </div>
     </motion.div>
   );
 };
 
 const StatusBadge = ({ status, onChange }) => {
-  const getStatusStyles = (currentStatus) => {
-    switch (currentStatus) {
-      case "Completed":
-        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-      case "In Progress":
-        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-      default:
-        return "bg-slate-700/30 text-slate-400 border-slate-700/50";
-    }
+  const getStatusStyles = (s) => {
+    if (s === "Completed") return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+    if (s === "In Progress") return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+    return "bg-slate-700/30 text-slate-400 border-slate-700/50";
   };
-
   return (
     <select
       value={status}
